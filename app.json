@@ -1,0 +1,7 @@
+{
+  "expo": {
+    "name": "Doctor Stroke - Landing",
+    "slug": "doctor-stroke-landing",
+    "platforms": ["ios", "android", "web"]
+  }
+}
