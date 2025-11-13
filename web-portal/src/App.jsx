@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react'
 import Signup from './Signup'
 import Scheduler from './Scheduler'
 import SignIn from './SignIn'
-import DietManagement from './DietManagement' 
-import Navbar from './Navbar' // <-- 1. Impor Navbar baru
+import DietManagement from './DietManagement'
+import Dashboard from './Dashboard'
+import Progress from './Progress'
+import Navbar from './Navbar'
 
 const COLORS = {
   primary: '#8385CC',
@@ -20,7 +22,7 @@ const COLORS = {
 export default function App() {
   const [info, setInfo] = useState(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [page, setPage] = useState('home') // 'home' | 'scheduler' | 'diet'
+  const [page, setPage] = useState('home') // 'home' | 'scheduler' | 'diet' | 'dashboard' | 'progress'
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignup, setShowSignup] = useState(false)
 
@@ -114,11 +116,13 @@ export default function App() {
             <section className="modules">
               <h3>Key Modules</h3>
               <div className="module-grid">
+                <div className="module-card" onClick={() => handleNavigate('dashboard')} style={{cursor: 'pointer'}}>
+                  <div className="module-emoji">📊</div><h4>Dashboard</h4><p>Your health overview today.</p>
+                </div>
                 <div className="module-card" onClick={() => handleNavigate('scheduler')} style={{cursor: 'pointer'}}>
                   <div className="module-emoji">📅</div><h4>Scheduling</h4><p>Manage appointments and therapy sessions.</p>
                 </div>
                 <div className="module-card"><div className="module-emoji">💊</div><h4>Medication</h4><p>Reminders and adherence logs.</p></div>
-                <div className="module-card"><div className="module-emoji">📈</div><h4>Reporting</h4><p>Structured progress reports for clinicians.</p></div>
                 
                 {/* 3. Tambahkan onClick di sini untuk navigasi */}
                 <div className="module-card" onClick={() => handleNavigate('diet')} style={{cursor: 'pointer'}}>
@@ -129,12 +133,20 @@ export default function App() {
           </>
         )}
 
+        {page === 'dashboard' && isLoggedIn && (
+          <Dashboard />
+        )}
+
         {page === 'scheduler' && (
           <Scheduler />
         )}
         
         {page === 'diet' && (
           <DietManagement />
+        )}
+
+        {page === 'progress' && isLoggedIn && (
+          <Progress />
         )}
       </main>
 
