@@ -1,0 +1,21 @@
+# Gunakan base image Node.js versi Long-Term Support (LTS)
+FROM node:lts-alpine
+
+# Tentukan direktori kerja di dalam container
+WORKDIR /app
+
+# Salin package.json dan package-lock.json ke direktori kerja
+COPY package*.json ./
+
+# Install dependencies proyek
+RUN npm install
+
+# Salin sisa file proyek ke direktori kerja
+COPY . .
+
+# Expose port yang digunakan oleh aplikasi (misalnya 3000)
+# Ganti 3000 jika server Anda berjalan di port lain
+EXPOSE 3000
+
+# Perintah untuk menjalankan aplikasi saat container dimulai
+CMD [ "node", "index.js" ]

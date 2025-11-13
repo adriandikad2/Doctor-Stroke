@@ -20,6 +20,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [page, setPage] = useState('home') // 'home' | 'scheduler'
   const [showSignIn, setShowSignIn] = useState(false)
+  const [showSignup, setShowSignup] = useState(false)
 
   useEffect(() => {
     fetch('/api/landing')
@@ -28,8 +29,8 @@ export default function App() {
       .catch((err) => console.error('Failed to load landing info', err))
   }, [])
 
-  const handleSignUp = async () => {
-    // keep for backwards compatibility — now we open the overlay
+  const handleRequestAccess = () => {
+    // Show signup modal for new users
     setShowSignup(true)
   }
 
@@ -40,8 +41,6 @@ export default function App() {
     }
     setPage('scheduler')
   }
-
-  const [showSignup, setShowSignup] = useState(false)
 
   return (
     <div className="app-root" style={{ minHeight: '100vh', backgroundColor: COLORS.bgLight, color: COLORS.black, fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' }}>
@@ -69,7 +68,7 @@ export default function App() {
                 <h2>Clinician Portal — Actionable patient insights</h2>
                 <p>Access structured reports, therapy schedules, and medication adherence data to support timely clinical decisions.</p>
                 <div className="hero-ctas">
-                  <button className="btn-primary" onClick={() => setShowSignIn(true)}>Request Access</button>
+                  <button className="btn-primary" onClick={handleRequestAccess}>Request Access</button>
                   <a className="btn-ghost" href="#learn">Learn more</a>
                 </div>
               </div>
@@ -101,6 +100,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">© {new Date().getFullYear()} Doctor Stroke — Group 7</footer>
+      
       {showSignup && <Signup onClose={() => setShowSignup(false)} />}
       {showSignIn && <SignIn onClose={() => setShowSignIn(false)} onSuccess={() => { setIsLoggedIn(true); setShowSignIn(false); setPage('scheduler') }} />}
     </div>
