@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Backend Main API
+  backend:
+    build:
+      context: ./backend_main
+      dockerfile: dockerfile
+    container_name: doctor-stroke-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - doctor-stroke-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    # REMOVED depends_on: postgres since we use Neon Cloud
+
+  # Web Portal (React + Nginx)
+  web-portal:
+    build:
+      context: ./web-portal
+      dockerfile: dockerfile
+    container_name: doctor-stroke-web-portal
+    ports:
+      - "5173:80"
+    networks:
+      - doctor-stroke-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Normal Site (Signup Site)
+  normal-site:
+    build:
+      context: ./normal-site
+      dockerfile: dockerfile
+    container_name: doctor-stroke-normal-site
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - BACKEND_URL=http://backend:3001
+    networks:
+      - doctor-stroke-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Mock Server (Development Only)
+  mock-server:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    container_name: doctor-stroke-mock-server
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+    networks:
+      - doctor-stroke-network
+    restart: unless-stopped
+    profiles:
+      - development
+
+networks:
+  doctor-stroke-network:
+    driver: bridge
