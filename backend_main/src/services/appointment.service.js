@@ -1,11 +1,8 @@
 const appointmentRepository = require('../repositories/appointment.repository');
-const { randomUUID } = require('crypto');
 
 const scheduleNewAppointment = async (appointmentData, caregiverId) => {
-  const appointment_id = randomUUID();
-  
   const completeAppointmentData = {
-    appointment_id,
+    appointment_id: null,
     patient_id: appointmentData.patient_id,
     doctor_id: appointmentData.doctor_id,
     caregiver_id: caregiverId,

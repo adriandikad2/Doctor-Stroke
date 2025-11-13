@@ -1,7 +1,6 @@
 const userRepository = require('../repositories/user.repository');
 const { hashPassword, comparePassword } = require('../utils/hash.util');
 const { createToken } = require('../utils/jwt.util');
-const { randomUUID } = require('crypto');
 
 const registerUser = async (userData) => {
   const { name, email, password, role, specialty } = userData;
@@ -13,16 +12,16 @@ const registerUser = async (userData) => {
 
   const hashedPassword = await hashPassword(password);
   const newUser = {
-    user_id: randomUUID(),
+    user_id: null,
     name,
     email,
-    password_hash: hashedPassword, // Changed from 'password' to 'password_hash'
-    role: role || 'caregiver', // Default role
+    password_hash: hashedPassword,
+    role: role || 'caregiver',
     specialty: specialty || null
   };
 
   const createdUser = await userRepository.createUser(newUser);
-  delete createdUser.password_hash; // Don't return the password hash
+  delete createdUser.password_hash;
   return createdUser;
 };
 
@@ -32,13 +31,13 @@ const loginUser = async (email, password) => {
     throw new Error('Invalid credentials');
   }
 
-  const isPasswordValid = await comparePassword(password, user.password_hash); // Changed from 'password' to 'password_hash'
+  const isPasswordValid = await comparePassword(password, user.password_hash);
   if (!isPasswordValid) {
     throw new Error('Invalid credentials');
   }
 
   const token = createToken({ userId: user.user_id, role: user.role });
-  delete user.password_hash; // Don't return the password hash
+  delete user.password_hash;
 
   return { user, token };
 };

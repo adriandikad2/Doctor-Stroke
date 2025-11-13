@@ -20,7 +20,7 @@ const handleGetLogsForPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
     
-    const logs = await logService.getLogsForPatient(patientId);
+    const logs = await logService.getLogsForPatient(patientId, req.user.userId);
     
     res.status(200).json({ 
       message: 'Progress logs retrieved successfully', 
