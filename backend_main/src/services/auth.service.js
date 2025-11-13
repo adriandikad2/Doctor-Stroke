@@ -12,7 +12,6 @@ const registerUser = async (userData) => {
 
   const hashedPassword = await hashPassword(password);
   const newUser = {
-    user_id: null,
     name,
     email,
     password_hash: hashedPassword,

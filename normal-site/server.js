@@ -5,26 +5,49 @@ const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 8082;
-// Default backend for the proxy: use 4000 (safer default) — override with BACKEND_URL env var
-const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
+const BACKEND = process.env.BACKEND_URL || 'http://localhost:3001';  // Updated
 
 app.use(express.static(path.join(__dirname, '.')));
 app.use(express.json());
 
-// Proxy /api/signup to the backend server
+// Proxy signup to backend
 app.post('/api/signup', async (req, res) => {
   try {
-    const target = `${BACKEND.replace(/\/$/, '')}/api/signup`;
-    const r = await fetch(target, { method: 'POST', body: JSON.stringify(req.body), headers: { 'Content-Type': 'application/json' } });
+    const target = `${BACKEND.replace(/\/$/, '')}/api/auth/register`;
+    const payload = {
+      ...req.body,
+      role: req.body.role || 'caregiver'
+    };
+    
+    console.log(`📤 Proxying signup to: ${target}`);
+    
+    const r = await fetch(target, { 
+      method: 'POST', 
+      body: JSON.stringify(payload), 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+    
     const text = await r.text();
     let data;
-    try { data = JSON.parse(text); } catch (e) { data = { ok: r.ok, text }; }
+    try { 
+      data = JSON.parse(text); 
+    } catch (e) { 
+      data = { ok: r.ok, text }; 
+    }
+    
+    console.log(`📥 Backend response:`, r.status, data);
     res.status(r.status).json(data);
   } catch (e) {
-    console.error('proxy error while calling backend', BACKEND, e && e.stack ? e.stack : e);
-    // Return more helpful error to client for local debugging
-    res.status(502).json({ ok: false, message: 'Backend proxy failed', error: String(e), backend: BACKEND });
+    console.error('❌ Proxy error:', e);
+    res.status(502).json({ 
+      ok: false, 
+      message: 'Backend connection failed', 
+      error: e.message 
+    });
   }
 });
 
-app.listen(PORT, () => console.log(`Normal site listening on http://localhost:${PORT} (proxy -> ${BACKEND})`));
+app.listen(PORT, () => {
+  console.log(`✅ Normal site running on http://localhost:${PORT}`);
+  console.log(`   Proxying to backend: ${BACKEND}`);
+});
