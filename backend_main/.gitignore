@@ -7,6 +7,8 @@ yarn.lock
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # IDE and Editor
 .vscode/

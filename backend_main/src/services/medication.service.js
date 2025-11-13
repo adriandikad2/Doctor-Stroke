@@ -1,18 +1,15 @@
 const medicationRepository = require('../repositories/medication.repository');
 const patientRepository = require('../repositories/patient.repository');
-const { randomUUID } = require('crypto');
 
 const addNewSchedule = async (scheduleData, user_id) => {
   const isLinked = await patientRepository.isUserLinkedToPatient(user_id, scheduleData.patient_id);
   
   if (!isLinked) {
-    throw new Error('Anda tidak punya hak akses untuk pasien ini');
+    throw new Error('You do not have access to this patient');
   }
   
-  const schedule_id = randomUUID();
-  
   const completeScheduleData = {
-    schedule_id,
+    schedule_id: null,
     ...scheduleData
   };
   
@@ -24,7 +21,7 @@ const getSchedulesForPatient = async (patient_id, user_id) => {
   const isLinked = await patientRepository.isUserLinkedToPatient(user_id, patient_id);
   
   if (!isLinked) {
-    throw new Error('Anda tidak punya hak akses untuk pasien ini');
+    throw new Error('You do not have access to this patient');
   }
   
   const schedules = await medicationRepository.findSchedulesByPatientId(patient_id);
@@ -35,13 +32,13 @@ const updateUserSchedule = async (schedule_id, scheduleData, user_id) => {
   const existingSchedule = await medicationRepository.findScheduleById(schedule_id);
   
   if (!existingSchedule) {
-    throw new Error('Jadwal obat tidak ditemukan');
+    throw new Error('Medication schedule not found');
   }
   
   const isLinked = await patientRepository.isUserLinkedToPatient(user_id, existingSchedule.patient_id);
   
   if (!isLinked) {
-    throw new Error('Anda tidak punya hak akses untuk pasien ini');
+    throw new Error('You do not have access to this patient');
   }
   
   const updatedSchedule = await medicationRepository.updateSchedule(schedule_id, scheduleData);
@@ -52,13 +49,13 @@ const deleteUserSchedule = async (schedule_id, user_id) => {
   const existingSchedule = await medicationRepository.findScheduleById(schedule_id);
   
   if (!existingSchedule) {
-    throw new Error('Jadwal obat tidak ditemukan');
+    throw new Error('Medication schedule not found');
   }
   
   const isLinked = await patientRepository.isUserLinkedToPatient(user_id, existingSchedule.patient_id);
   
   if (!isLinked) {
-    throw new Error('Anda tidak punya hak akses untuk pasien ini');
+    throw new Error('You do not have access to this patient');
   }
   
   const deletedSchedule = await medicationRepository.deleteSchedule(schedule_id);

@@ -1,11 +1,8 @@
 const patientRepository = require('../repositories/patient.repository');
-const { randomUUID } = require('crypto');
 
 const createNewPatient = async (patientData, caregiverId) => {
-  const patient_id = randomUUID();
-  
   const newPatient = await patientRepository.createPatient({
-    patient_id,
+    patient_id: null,
     ...patientData
   });
   
