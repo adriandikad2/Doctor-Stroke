@@ -18,7 +18,6 @@ export default function SignIn({ onClose, onSuccess }){
       setLoading(false)
       
       if (res.ok) {
-        // Store the token
         localStorage.setItem('authToken', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
         alert('Signed in successfully!')
@@ -33,15 +32,16 @@ export default function SignIn({ onClose, onSuccess }){
   }
 
   return (
-    <div style={{ position: 'fixed', left:0, right:0, top:0, bottom:0, background: 'rgba(0,0,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ width: 'min(420px,94%)', background: 'white', borderRadius: 12, padding: 18 }}>
-        <h3 style={{ marginTop:0, color:'#8385CC' }}>Sign in</h3>
+    // GANTI INLINE STYLES DENGAN CLASSNAME
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ width: 'min(420px, 94%)' }}>
+        <h3>Sign in</h3>
         <p>Sign in to access clinician features</p>
-        <input placeholder='Email' value={email} onChange={(e)=>setEmail(e.target.value)} style={{ width:'100%', padding:10, marginBottom:10, borderRadius:8, border:'1px solid #e5e7eb' }} />
-        <input type='password' placeholder='Password' value={password} onChange={(e)=>setPassword(e.target.value)} style={{ width:'100%', padding:10, marginBottom:10, borderRadius:8, border:'1px solid #e5e7eb' }} />
+        <input placeholder='Email' value={email} onChange={(e)=>setEmail(e.target.value)} />
+        <input type='password' placeholder='Password' value={password} onChange={(e)=>setPassword(e.target.value)} />
         <div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
-          <button onClick={onClose} style={{ padding:'10px 14px', borderRadius:10, border:'1px solid #8385CC', background:'transparent', color:'#8385CC' }}>Cancel</button>
-          <button onClick={submit} style={{ padding:'10px 14px', borderRadius:10, border:'none', background:'#68A1D1', color:'white' }}>{loading ? '...' : 'Sign in'}</button>
+          <button onClick={onClose} className="btn-cancel">Cancel</button>
+          <button onClick={submit} className="btn-submit">{loading ? '...' : 'Sign in'}</button>
         </div>
       </div>
     </div>

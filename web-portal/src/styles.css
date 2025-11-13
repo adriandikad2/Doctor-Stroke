@@ -1,19 +1,52 @@
-:root{
+:root {
+	/* Warna Aksen (tetap sama) */
 	--primary: #8385CC; /* purple - headings & accents */
 	--blue: #68A1D1;    /* primary CTA */
 	--teal: #79AEB3;    /* secondary accents */
 	--green: #A4CEA9;   /* success */
 	--lavender: #B199C7;/* soft accent */
 	--soft: #E0BEE6;    /* light highlight */
-	--bg: #f0f6fb;      /* very soft blue background */
-	--card: #ffffff;    /* card surface */
-	--muted: #515964;   /* body copy muted */
-	--muted-2: #6b7280; /* secondary muted */
+
+	/* Warna Tema Light Mode (Default) */
+	--color-bg: #f0f6fb;      /* very soft blue background */
+	--color-card: #ffffff;    /* card surface */
+	--color-text: #111827;    /* main text */
+	--color-muted: #515964;   /* body copy muted */
+	--color-muted-2: #6b7280; /* secondary muted */
+	--color-border: #e5e7eb;  /* input border */
 }
 
-*{ box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: #111827; }
+[data-theme="dark"] {
+	/* Warna Tema Dark Mode */
+	--color-bg: #111827;      /* dark blue */
+	--color-card: #1f2937;    /* dark grey */
+	--color-text: #f9fafb;    /* off-white text */
+	--color-muted: #9ca3af;   /* light gray text */
+	--color-muted-2: #6b7280; /* medium gray text */
+	--color-border: #4b5563;  /* dark border */
+}
+
+* { box-sizing: border-box; }
+
+body { 
+	margin: 0; 
+	background: var(--color-bg); 
+	color: var(--color-text);
+	transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
 button { cursor: pointer; font-weight: 700; }
+
+/* Global Input Styles */
+input, select, textarea {
+	width: 100%;
+	padding: 10px;
+	margin-bottom: 10px;
+	border-radius: 8px;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+	border: 1px solid var(--color-border);
+}
 
 .app-header{ display:flex; align-items:center; justify-content:space-between; padding:24px 32px; }
 .brand{ display:flex; align-items:center; gap:12px; }
@@ -22,25 +55,84 @@ button { cursor: pointer; font-weight: 700; }
 
 .container{ max-width:1100px; margin: 0 auto; padding: 20px; }
 .hero-card{ display:flex; gap:24px; align-items:stretch; margin-bottom:28px; }
-.hero-text{ flex:1; padding:32px; background: linear-gradient(180deg, rgba(104,161,209,0.06), rgba(180,150,200,0.04)); border-radius:16px; box-shadow: 0 12px 30px rgba(16,24,32,0.06); }
+
+.hero-text{ 
+	flex:1; 
+	padding:32px; 
+	/* Gradien dihilangkan untuk dark mode, diganti --color-card */
+	background: var(--color-card); 
+	border-radius:16px; 
+	box-shadow: 0 12px 30px rgba(16,24,32,0.06); 
+}
 .hero-text h2{ margin-top:0; font-size:32px; color:var(--primary); }
-.hero-text p{ color: var(--muted); font-size:16px; line-height:1.6 }
+.hero-text p{ color: var(--color-muted); font-size:16px; line-height:1.6 }
 .hero-ctas{ margin-top:16px; display:flex; gap:12px; }
-.btn-primary{ background:var(--blue); color:var(--white); border:none; padding:12px 18px; border-radius:12px; box-shadow: 0 16px 36px rgba(104,161,209,0.16); }
+.btn-primary{ background:var(--blue); color:#FFFFFF; border:none; padding:12px 18px; border-radius:12px; box-shadow: 0 16px 36px rgba(104,161,209,0.16); }
 .btn-ghost{ color:var(--primary); border:1px solid var(--primary); background:transparent; padding:10px 16px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; }
 
 .hero-side{ width:320px; display:flex; align-items:center; justify-content:center; }
-.panel{ background:var(--card); border-radius:12px; padding:20px; width:100%; box-shadow: 0 18px 40px rgba(11,22,34,0.06); }
+.panel{ background:var(--color-card); border-radius:12px; padding:20px; width:100%; box-shadow: 0 18px 40px rgba(11,22,34,0.06); }
 .panel h4{ margin:0 0 8px 0; color:var(--primary) }
-.panel p{ color:var(--muted); margin:0 0 12px 0; }
+.panel p{ color:var(--color-muted); margin:0 0 12px 0; }
 
 .modules{ margin-top:12px; }
 .module-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:12px; }
-.module-card{ background:var(--card); padding:20px; border-radius:12px; box-shadow: 0 12px 30px rgba(14,30,45,0.06); border: 1px solid rgba(0,0,0,0.03); }
+.module-card{ background:var(--color-card); padding:20px; border-radius:12px; box-shadow: 0 12px 30px rgba(14,30,45,0.06); border: 1px solid rgba(0,0,0,0.03); }
 .module-emoji{ font-size:26px; margin-bottom:8px; }
 .module-card h4{ margin:0 0 8px 0; }
 
-.app-footer{ text-align:center; padding:28px; color:var(--muted-2); }
+.app-footer{ text-align:center; padding:28px; color:var(--color-muted-2); }
+
+/* Modal Styles (untuk SignIn & SignUp) */
+.modal-overlay {
+  position: fixed; left:0; right:0; top:0; bottom:0;
+  background: rgba(0,0,0,0.35);
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-content {
+  background: var(--color-card);
+  color: var(--color-text);
+  border-radius: 12px;
+  padding: 20px;
+  width: min(680px, 90%);
+}
+.modal-content h3 {
+  margin-top: 0;
+  color: var(--primary);
+}
+.modal-content p {
+  color: var(--color-muted);
+}
+/* Tombol di dalam modal */
+.modal-content .btn-cancel {
+	padding:10px 14px; 
+	border-radius:10px; 
+	border:1px solid var(--primary); 
+	background:transparent; 
+	color:var(--primary);
+}
+.modal-content .btn-submit {
+	padding:10px 14px; 
+	border-radius:10px; 
+	border:none; 
+	background:var(--blue); 
+	color:white;
+}
+
+/* Scheduler & Diet Form Styles */
+.scheduler .form-card, .diet-management .form-card {
+	background:var(--color-card); 
+	padding:16px; 
+	border-radius:12px; 
+	box-shadow:0 12px 30px rgba(14,30,45,0.06);
+}
+.scheduler label, .diet-management label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+	color: var(--color-text);
+}
+
 
 @media (max-width: 800px){
 	.hero-card{ flex-direction:column; }

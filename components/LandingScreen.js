@@ -124,7 +124,24 @@ const LandingScreen = () => {
             <Text style={styles.featureTitle}>Progress</Text>
             <Text style={styles.featureText}>Structured reports and therapy notes for clinicians.</Text>
           </View>
+          
+          {Platform.OS === 'web' && isDesktop && (
+            <View style={[styles.featureCard, styles.featureCardElevated]}>
+              <Text style={styles.featureIcon}>🥗</Text>
+              <Text style={styles.featureTitle}>Diet</Text>
+              <Text style={styles.featureText}>Manage nutrition plans and log meals.</Text>
+            </View>
+          )}
+
         </View>
+        
+        {(!isDesktop || Platform.OS !== 'web') && (
+            <View style={[styles.featureCard, styles.featureCardElevated, {marginTop: 12}]}>
+              <Text style={styles.featureIcon}>🥗</Text>
+              <Text style={styles.featureTitle}>Diet</Text>
+              <Text style={styles.featureText}>Manage nutrition plans and log meals.</Text>
+            </View>
+        )}
       </View>
 
       <View style={styles.footer}>
