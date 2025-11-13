@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import Signup from './Signup'
 import Scheduler from './Scheduler'
 import SignIn from './SignIn'
+import DietManagement from './DietManagement' 
+import Navbar from './Navbar' // <-- 1. Impor Navbar baru
 
 const COLORS = {
   primary: '#8385CC',
@@ -18,11 +20,20 @@ const COLORS = {
 export default function App() {
   const [info, setInfo] = useState(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [page, setPage] = useState('home') // 'home' | 'scheduler'
+  const [page, setPage] = useState('home') // 'home' | 'scheduler' | 'diet'
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignup, setShowSignup] = useState(false)
 
+  // State untuk melacak halaman yang dituju sebelum login
+  const [pendingPage, setPendingPage] = useState(null);
+
   useEffect(() => {
+    // Cek token saat memuat
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+    
     fetch('/api/landing')
       .then((r) => r.json())
       .then(setInfo)
@@ -34,31 +45,48 @@ export default function App() {
     setShowSignup(true)
   }
 
-  const goToScheduler = () => {
-    if (!isLoggedIn) {
-      setShowSignIn(true)
-      return
+  // Wrapper untuk navigasi yang memerlukan login
+  const handleNavigate = (targetPage) => {
+    if (targetPage !== 'home' && !isLoggedIn) {
+      // Simpan halaman yang dituju
+      setPendingPage(targetPage); 
+      setShowSignIn(true);
+      return;
     }
-    setPage('scheduler')
+    setPendingPage(null); // Hapus halaman tertunda
+    setPage(targetPage);
+  }
+
+  const handleSignOut = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setPage('home');
+  }
+  
+  const handleSignInSuccess = () => {
+    setIsLoggedIn(true); 
+    setShowSignIn(false);
+    // Arahkan ke halaman yang tadi ingin dibuka, atau default ke scheduler
+    setPage(pendingPage || 'scheduler');
+    setPendingPage(null); // Hapus halaman tertunda
+  }
+
+  const handleCloseSignIn = () => {
+    setShowSignIn(false);
+    setPendingPage(null); // Hapus juga jika modal ditutup
   }
 
   return (
     <div className="app-root" style={{ minHeight: '100vh', backgroundColor: COLORS.bgLight, color: COLORS.black, fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial' }}>
-      <header className="app-header">
-        <div className="brand">
-          <div className="brand-mark" />
-          <h1>Doctor Stroke</h1>
-        </div>
-        <nav>
-          <button className="btn-ghost" onClick={() => { setPage('home') }}>Home</button>
-          <button className="btn-ghost" onClick={goToScheduler} style={{ marginLeft: 8 }}>Scheduler</button>
-          {!isLoggedIn ? (
-            <button className="btn-primary" onClick={() => setShowSignIn(true)} style={{ marginLeft: 12 }}>Sign in</button>
-          ) : (
-            <button className="btn-primary" onClick={() => { setIsLoggedIn(false); setPage('home') }} style={{ marginLeft: 12 }}>Sign out</button>
-          )}
-        </nav>
-      </header>
+      
+      {/* 2. Gunakan komponen Navbar baru */}
+      <Navbar 
+        isLoggedIn={isLoggedIn}
+        onNavigate={handleNavigate} // Ini adalah prop penting
+        onSignIn={() => setShowSignIn(true)}
+        onSignOut={handleSignOut}
+      />
 
       <main className="container">
         {page === 'home' && (
@@ -86,9 +114,16 @@ export default function App() {
             <section className="modules">
               <h3>Key Modules</h3>
               <div className="module-grid">
-                <div className="module-card"><div className="module-emoji">📅</div><h4>Scheduling</h4><p>Manage appointments and therapy sessions.</p></div>
+                <div className="module-card" onClick={() => handleNavigate('scheduler')} style={{cursor: 'pointer'}}>
+                  <div className="module-emoji">📅</div><h4>Scheduling</h4><p>Manage appointments and therapy sessions.</p>
+                </div>
                 <div className="module-card"><div className="module-emoji">💊</div><h4>Medication</h4><p>Reminders and adherence logs.</p></div>
                 <div className="module-card"><div className="module-emoji">📈</div><h4>Reporting</h4><p>Structured progress reports for clinicians.</p></div>
+                
+                {/* 3. Tambahkan onClick di sini untuk navigasi */}
+                <div className="module-card" onClick={() => handleNavigate('diet')} style={{cursor: 'pointer'}}>
+                  <div className="module-emoji">🥗</div><h4>Diet</h4><p>Manage nutrition plans and log meals.</p>
+                </div>
               </div>
             </section>
           </>
@@ -97,12 +132,16 @@ export default function App() {
         {page === 'scheduler' && (
           <Scheduler />
         )}
+        
+        {page === 'diet' && (
+          <DietManagement />
+        )}
       </main>
 
       <footer className="app-footer">© {new Date().getFullYear()} Doctor Stroke — Group 7</footer>
       
       {showSignup && <Signup onClose={() => setShowSignup(false)} />}
-      {showSignIn && <SignIn onClose={() => setShowSignIn(false)} onSuccess={() => { setIsLoggedIn(true); setShowSignIn(false); setPage('scheduler') }} />}
+      {showSignIn && <SignIn onClose={handleCloseSignIn} onSuccess={handleSignInSuccess} />}
     </div>
   )
 }
