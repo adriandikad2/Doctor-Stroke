@@ -156,119 +156,390 @@ export default function DietManagement() {
   };
 
   return (
-    <section className="diet-management" style={{ marginTop: 20 }}>
-      <h3>Manajemen Diet (Nutrisi)</h3>
+    <section className="diet-management" style={{ marginTop: 20, animation: 'fadeIn 0.5s ease-in-out' }}>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .diet-management {
+          max-width: 1200px;
+          margin: 20px auto;
+          padding: 20px;
+        }
+
+        .diet-management h3 {
+          color: var(--primary);
+          font-size: 24px;
+          font-weight: 700;
+          margin-bottom: 24px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .diet-management h3::before {
+          content: '🥗';
+          font-size: 28px;
+        }
+
+        .patient-selector {
+          background: var(--color-card);
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 24px;
+          box-shadow: 0 12px 30px rgba(14, 30, 45, 0.06);
+          border: 1px solid var(--color-border);
+          animation: slideInUp 0.6s ease-out;
+        }
+
+        .patient-selector label {
+          display: block;
+          font-weight: 700;
+          color: var(--primary);
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+
+        .patient-selector select {
+          width: 100%;
+          max-width: 300px;
+        }
+
+        .diet-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 24px;
+        }
+
+        .form-card {
+          background: var(--color-card);
+          padding: 24px;
+          border-radius: 12px;
+          box-shadow: 0 12px 30px rgba(14, 30, 45, 0.06);
+          border: 1px solid var(--color-border);
+          animation: slideInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .form-card:nth-child(1) { animation-delay: 0.2s; }
+        .form-card:nth-child(2) { animation-delay: 0.3s; }
+
+        .form-card h4 {
+          margin: 0 0 16px 0;
+          color: var(--primary);
+          font-size: 16px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .form-card form {
+          display: grid;
+          gap: 12px;
+        }
+
+        .form-card label {
+          display: block;
+          font-weight: 600;
+          font-size: 13px;
+          color: var(--color-text);
+          margin-bottom: 4px;
+        }
+
+        .form-card input,
+        .form-card select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          background: var(--color-bg);
+          color: var(--color-text);
+          font-size: 13px;
+          margin-bottom: 0;
+          transition: all 0.3s ease;
+        }
+
+        .form-card input:focus,
+        .form-card select:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(131, 133, 204, 0.1);
+        }
+
+        .form-card button {
+          padding: 10px 16px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          margin-top: 8px;
+          font-size: 14px;
+        }
+
+        .form-card button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .diet-divider {
+          margin: 24px 0;
+          border: none;
+          border-top: 1px solid var(--color-border);
+        }
+
+        .meal-list {
+          max-height: 500px;
+          overflow-y: auto;
+        }
+
+        .meal-item {
+          padding: 12px;
+          margin-bottom: 8px;
+          background: var(--color-bg);
+          border-radius: 8px;
+          border-left: 4px solid var(--teal);
+          transition: all 0.3s ease;
+          animation: slideInUp 0.4s ease-out forwards;
+          opacity: 0;
+        }
+
+        .meal-item:hover {
+          box-shadow: 0 4px 12px rgba(121, 174, 179, 0.15);
+          transform: translateX(4px);
+        }
+
+        .meal-item .meal-time {
+          font-weight: 700;
+          color: var(--color-text);
+          margin: 0 0 4px 0;
+          font-size: 13px;
+        }
+
+        .meal-item .meal-foods {
+          color: var(--color-muted-2);
+          margin: 0 0 6px 0;
+          font-size: 12px;
+        }
+
+        .meal-item .meal-nutrition {
+          display: flex;
+          gap: 12px;
+          font-size: 11px;
+          color: var(--color-muted-2);
+        }
+
+        .meal-item .meal-feedback {
+          color: #FFA500;
+          font-size: 11px;
+          font-weight: 600;
+          margin-top: 6px;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 40px 20px;
+          color: var(--color-muted-2);
+        }
+
+        .error-message {
+          background: #FEE2E2;
+          color: #DC2626;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 13px;
+          border-left: 4px solid #DC2626;
+        }
+
+        .loading-spinner {
+          display: inline-block;
+          width: 30px;
+          height: 30px;
+          border: 3px solid var(--color-border);
+          border-top-color: var(--primary);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-left: 12px;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1000px) {
+          .diet-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <h3>Manajemen Diet & Nutrisi</h3>
       
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <div className="error-message">❌ Error: {error}</div>}
       
-      <div style={{ marginBottom: 16 }}>
-        <label htmlFor="patient-select" style={{ fontWeight: 600, marginRight: 8 }}>Pilih Pasien:</label>
-        <select 
-          id="patient-select" 
-          value={selectedPatientId} 
-          onChange={(e) => setSelectedPatientId(e.target.value)}
-          style={{ marginBottom: 0 }} // Hapus margin bottom
-        >
-          <option value="">-- Pilih --</option>
-          {patients.map(p => (
-            <option key={p.patient_id} value={p.patient_id}>{p.name}</option>
-          ))}
-        </select>
-        {loading && <span style={{ marginLeft: 10 }}>Memuat...</span>}
+      <div className="patient-selector">
+        <label htmlFor="patient-select">🏥 Pilih Pasien</label>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <select 
+            id="patient-select" 
+            value={selectedPatientId} 
+            onChange={(e) => setSelectedPatientId(e.target.value)}
+            style={{ marginBottom: 0 }}
+          >
+            <option value="">-- Pilih Pasien --</option>
+            {patients.map(p => (
+              <option key={p.patient_id} value={p.patient_id}>{p.name}</option>
+            ))}
+          </select>
+          {loading && <div className="loading-spinner"></div>}
+        </div>
       </div>
 
       {!selectedPatientId && !loading && (
-        <p style={{ color: 'var(--muted-2)' }}>Silakan pilih pasien untuk melihat data nutrisi.</p>
+        <div className="empty-state">
+          <p style={{ fontSize: '14px' }}>👉 Silakan pilih pasien untuk melihat data nutrisi dan rencana diet.</p>
+        </div>
       )}
 
       {selectedPatientId && !loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div className="diet-grid">
           
-          {/* Hapus inline styles dari form elements */}
-          <div className="form-card">
-            <h4 style={{ marginTop: 0 }}>Profil Nutrisi</h4>
-            <form onSubmit={handleUpdateProfile}>
-              <div style={{ marginBottom: 8 }}>
-                <label>Batas Sodium (mg)</label>
-                <input 
-                  type="number" 
-                  name="sodium_mg"
-                  value={formData.sodium_mg} 
-                  onChange={(e) => handleFormChange(e, setFormData)} 
-                />
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <label>Target Serat (g)</label>
-                <input 
-                  type="number" 
-                  name="fiber_g"
-                  value={formData.fiber_g} 
-                  onChange={(e) => handleFormChange(e, setFormData)} 
-                />
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <label>Target Kalori (Max)</label>
-                <input 
-                  type="number" 
-                  name="calories"
-                  value={formData.calories} 
-                  onChange={(e) => handleFormChange(e, setFormData)} 
-                />
-              </div>
-              <button type="submit" style={{ padding:'10px 14px', borderRadius:10, background:'var(--blue)', color:'white', border:'none', marginBottom: 0 }}>Update Profil</button>
-            </form>
-            
-            <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
-            
-            <h4 style={{ marginTop: 0 }}>Catat Makanan Baru</h4>
-            <form onSubmit={handleLogMeal}>
-              <select name="meal_type" value={mealFormData.meal_type} onChange={(e) => handleFormChange(e, setMealFormData)}>
-                <option value="breakfast">Sarapan</option>
-                <option value="lunch">Makan Siang</option>
-                <option value="dinner">Makan Malam</option>
-                <option value="snack">Camilan</option>
-              </select>
-              <input name="foods" value={mealFormData.foods} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="Makanan (cth: oatmeal, apel)" />
-              <input name="calories" value={mealFormData.calories} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="Kalori (kkal)" type="number" />
-              <input name="sodium_mg" value={mealFormData.sodium_mg} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="Sodium (mg)" type="number" />
-              <input name="fiber_g" value={mealFormData.fiber_g} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="Serat (g)" type="number" />
-              <button type="submit" style={{ padding:'10px 14px', borderRadius:10, background:'var(--green)', color:'white', border:'none', marginBottom: 0 }}>Catat Makanan</button>
-            </form>
+          {/* Left Panel: Forms */}
+          <div>
+            <div className="form-card">
+              <h4>📋 Profil Nutrisi</h4>
+              <form onSubmit={handleUpdateProfile}>
+                <div>
+                  <label>Batas Sodium (mg)</label>
+                  <input 
+                    type="number" 
+                    name="sodium_mg"
+                    value={formData.sodium_mg} 
+                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    placeholder="mis: 1500"
+                  />
+                </div>
+                <div>
+                  <label>Target Serat (g)</label>
+                  <input 
+                    type="number" 
+                    name="fiber_g"
+                    value={formData.fiber_g} 
+                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    placeholder="mis: 25"
+                  />
+                </div>
+                <div>
+                  <label>Target Kalori (Maksimal)</label>
+                  <input 
+                    type="number" 
+                    name="calories"
+                    value={formData.calories} 
+                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    placeholder="mis: 1800"
+                  />
+                </div>
+                <button type="submit" style={{ background: 'var(--blue)', color: 'white' }}>
+                  💾 Update Profil
+                </button>
+              </form>
+              
+              <hr className="diet-divider" />
+              
+              <h4>🍽️ Catat Makanan Baru</h4>
+              <form onSubmit={handleLogMeal}>
+                <div>
+                  <label>Jenis Makanan</label>
+                  <select name="meal_type" value={mealFormData.meal_type} onChange={(e) => handleFormChange(e, setMealFormData)}>
+                    <option value="breakfast">🌅 Sarapan</option>
+                    <option value="lunch">☀️ Makan Siang</option>
+                    <option value="dinner">🌙 Makan Malam</option>
+                    <option value="snack">🍪 Camilan</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Makanan (pisahkan dengan koma)</label>
+                  <input name="foods" value={mealFormData.foods} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: oatmeal, apel, susu" />
+                </div>
+                <div>
+                  <label>Kalori (kkal)</label>
+                  <input name="calories" value={mealFormData.calories} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 350" type="number" />
+                </div>
+                <div>
+                  <label>Sodium (mg)</label>
+                  <input name="sodium_mg" value={mealFormData.sodium_mg} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 200" type="number" />
+                </div>
+                <div>
+                  <label>Serat (g)</label>
+                  <input name="fiber_g" value={mealFormData.fiber_g} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 5" type="number" />
+                </div>
+                <button type="submit" style={{ background: 'var(--green)', color: 'white' }}>
+                  ✏️ Catat Makanan
+                </button>
+              </form>
+            </div>
           </div>
-          
-          <div className="form-card" style={{ overflow: 'auto' }}>
-            <h4 style={{ marginTop: 0 }}>Rencana Makan (3 Hari)</h4>
-            {plan && plan.plan.map(day => (
-              <div key={day.day} style={{ marginBottom: 12 }}>
-                <strong style={{ display: 'block', borderBottom: '1px solid var(--color-border)', paddingBottom: 4 }}>{day.day}</strong>
-                <ul style={{ listStyle: 'none', paddingLeft: 10, fontSize: 14 }}>
-                  <li><b>Sarapan:</b> {day.meals.breakfast.title}</li>
-                  <li><b>Siang:</b> {day.meals.lunch.title}</li>
-                  <li><b>Malam:</b> {day.meals.dinner.title}</li>
-                  <li><b>Camilan:</b> {day.meals.snack.title}</li>
-                </ul>
-              </div>
-            ))}
-            
-            <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid var(--color-border)' }} />
-            
-            <h4 style={{ marginTop: 0 }}>Riwayat Makanan Tercatat</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 14 }}>
-              {meals.length > 0 ? meals.map(meal => (
-                <li key={meal.meal_id} style={{ padding: 8, borderBottom: '1px solid var(--color-border)' }}>
-                  <div style={{ fontWeight: 700 }}>{meal.logged_for}: {meal.meal_type}</div>
-                  <div style={{ color: 'var(--color-muted-2)' }}>{meal.foods.join(', ')}</div>
-                  <div style={{ color: 'var(--color-muted-2)', fontSize: 12 }}>
-                    {meal.calories} kkal, {meal.sodium_mg}mg Na, {meal.fiber_g}g serat
-                  </div>
-                  {meal.feedback && meal.feedback.status === 'warning' && (
-                    <div style={{ color: 'orange', fontSize: 12, fontWeight: 600 }}>
-                      Feedback: {meal.feedback.notes.join(' ')}
+
+          {/* Right Panel: Data & Plans */}
+          <div>
+            <div className="form-card">
+              <h4>📅 Rencana Makan (3 Hari)</h4>
+              {plan && plan.plan && plan.plan.length > 0 ? (
+                <div style={{ fontSize: '13px' }}>
+                  {plan.plan.map((day, idx) => (
+                    <div key={day.day} style={{ marginBottom: '12px' }} className="meal-item">
+                      <strong style={{ display: 'block', marginBottom: '6px', color: 'var(--primary)' }}>{day.day}</strong>
+                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🌅 Sarapan: {day.meals.breakfast.title}</p>
+                      <p style={{ margin: '2px 0', fontSize: '11px' }}>☀️ Siang: {day.meals.lunch.title}</p>
+                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🌙 Malam: {day.meals.dinner.title}</p>
+                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🍪 Camilan: {day.meals.snack.title}</p>
                     </div>
-                  )}
-                </li>
-              )) : <p style={{ color: 'var(--color-muted-2)' }}>Belum ada makanan tercatat.</p>}
-            </ul>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>Belum ada rencana makan</p>
+              )}
+            </div>
+
+            <div className="form-card">
+              <h4>📝 Riwayat Makanan Tercatat</h4>
+              <div className="meal-list">
+                {meals.length > 0 ? meals.map((meal, idx) => (
+                  <div key={meal.meal_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
+                    <p className="meal-time">{meal.logged_for}: {meal.meal_type}</p>
+                    <p className="meal-foods">🍽️ {meal.foods.join(', ')}</p>
+                    <div className="meal-nutrition">
+                      <span>⚡ {meal.calories} kkal</span>
+                      <span>🧂 {meal.sodium_mg}mg Na</span>
+                      <span>🌾 {meal.fiber_g}g Serat</span>
+                    </div>
+                    {meal.feedback && meal.feedback.status === 'warning' && (
+                      <p className="meal-feedback">⚠️ {meal.feedback.notes.join(', ')}</p>
+                    )}
+                  </div>
+                )) : (
+                  <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px', padding: '20px 0' }}>
+                    Belum ada makanan tercatat. Mulai catat sekarang! 👇
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
         </div>
