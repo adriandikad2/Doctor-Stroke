@@ -11,7 +11,7 @@ app.use(express.static(path.join(__dirname, '.')));
 app.use(express.json());
 
 // Proxy signup to backend
-app.post('/api/signup', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
     const target = `${BACKEND.replace(/\/$/, '')}/api/auth/register`;
     const payload = {

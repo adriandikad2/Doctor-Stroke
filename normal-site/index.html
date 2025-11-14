@@ -3,28 +3,129 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Doctor Stroke — Sign Up</title>
+    <title>Doctor Stroke — Caregiver Portal</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="nav-brand">
+        <div class="brand-mark"></div>
+        <span class="brand-name">Doctor Stroke</span>
+      </div>
+      <div class="nav-menu">
+        <button class="nav-link active" data-page="home">🏠 Home</button>
+        <button class="nav-link" data-page="diet">🥗 Diet</button>
+        <button class="nav-link" data-page="progress">📊 Progress</button>
+      </div>
+    </nav>
+
     <main class="wrap">
-      <div class="card">
-        <h1>Join Doctor Stroke</h1>
-        <p class="lead">Create an account to access patient care features and coordinate with the care team.</p>
-        <form id="signup">
-          <label>Full name (optional)
-            <input id="name" type="text" placeholder="Full name" />
-          </label>
-          <label>Email
-            <input id="email" type="email" placeholder="you@example.com" required />
-          </label>
-          <div class="actions">
-            <button id="submit" type="submit" class="btn primary">Sign up</button>
+      <!-- Home Page (Signup) -->
+      <div id="home-page" class="page active">
+        <div class="card">
+          <h1>Join Doctor Stroke</h1>
+          <p class="lead">Create an account to access patient care features and coordinate with the care team.</p>
+          <form id="signup">
+            <label>Full name (optional)
+              <input id="name" type="text" placeholder="Full name" />
+            </label>
+            <label>Email
+              <input id="email" type="email" placeholder="you@example.com" required />
+            </label>
+            <label>Password
+              <input id="password" type="password" placeholder="Password" required />
+            </label>
+            <div class="actions">
+              <button id="submit" type="submit" class="btn primary">Sign up</button>
+            </div>
+          </form>
+          <div id="msg" class="msg"></div>
+          
+          <div class="divider"></div>
+          
+          <p style="text-align: center; margin-top: 16px;">Already have an account?</p>
+          <button id="login-toggle" class="btn secondary" style="width: 100%;">Sign In</button>
+        </div>
+
+        <!-- Login Form (Hidden by default) -->
+        <div id="login-form" class="card" style="display: none;">
+          <h1>Sign In</h1>
+          <p class="lead">Access your caregiver dashboard</p>
+          <form id="login">
+            <label>Email
+              <input id="login-email" type="email" placeholder="you@example.com" required />
+            </label>
+            <label>Password
+              <input id="login-password" type="password" placeholder="Password" required />
+            </label>
+            <div class="actions">
+              <button id="login-submit" type="submit" class="btn primary">Sign in</button>
+            </div>
+          </form>
+          <div id="login-msg" class="msg"></div>
+          
+          <button id="signup-toggle" class="btn secondary" style="width: 100%; margin-top: 16px;">Back to Sign Up</button>
+        </div>
+      </div>
+
+      <!-- Diet Management Page -->
+      <div id="diet-page" class="page">
+        <div class="card">
+          <h1>🥗 Diet Management</h1>
+          <p class="lead">View nutrition profile and meal plans for your patients</p>
+          
+          <div id="diet-loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading diet information...</p>
           </div>
-        </form>
-        <div id="msg" class="msg"></div>
+
+          <div id="diet-error" class="error-msg" style="display: none;"></div>
+
+          <!-- Patient Selector -->
+          <div id="patient-selector" style="display: none;">
+            <label for="diet-patient-select">Select Patient</label>
+            <select id="diet-patient-select" class="select">
+              <option value="">-- Choose Patient --</option>
+            </select>
+          </div>
+
+          <!-- Diet Content -->
+          <div id="diet-content" style="display: none;">
+            <!-- Nutrition Profile -->
+            <div class="diet-section">
+              <h3>📋 Nutrition Profile</h3>
+              <div id="nutrition-profile" class="info-grid"></div>
+            </div>
+
+            <!-- Meal Plan -->
+            <div class="diet-section">
+              <h3>📅 Meal Plan (Next 7 Days)</h3>
+              <div id="meal-plan" class="meal-plan-grid"></div>
+            </div>
+
+            <!-- Recent Meals -->
+            <div class="diet-section">
+              <h3>📝 Recent Meals Logged</h3>
+              <div id="recent-meals" class="meal-list"></div>
+            </div>
+          </div>
+
+          <div id="diet-empty" style="display: none; text-align: center; padding: 40px 20px; color: #888;">
+            <p>👉 Please select a patient to view their diet information.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Page (Placeholder) -->
+      <div id="progress-page" class="page">
+        <div class="card">
+          <h1>📊 Progress Tracking</h1>
+          <p class="lead">Coming soon: View patient recovery progress and health metrics</p>
+        </div>
       </div>
     </main>
+
     <script src="/main.js"></script>
   </body>
 </html>
