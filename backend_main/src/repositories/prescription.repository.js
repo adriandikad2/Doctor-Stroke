@@ -1,161 +1,146 @@
-const db = require('../config/db');
+import prisma from '../config/db.js';
 
-const createPrescription = async (data) => {
-  const {
-    prescription_id,
-    patient_id,
-    doctor_id,
-    medication_name,
-    dosage,
-    instructions,
-    frequency_per_day,
-    dosing_times,
-    start_date,
-    end_date,
-    reminder_window_minutes,
-    is_critical,
-  } = data;
-
-  const query = `
-    INSERT INTO prescriptions (
-      prescription_id,
-      patient_id,
-      doctor_id,
-      medication_name,
-      dosage,
-      instructions,
-      frequency_per_day,
-      dosing_times,
-      start_date,
-      end_date,
-      reminder_window_minutes,
-      is_critical
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-    RETURNING *;
-  `;
-
-  const { rows } = await db.query(query, [
-    prescription_id,
-    patient_id,
-    doctor_id,
-    medication_name,
-    dosage,
-    instructions || null,
-    frequency_per_day,
-    dosing_times,
-    start_date,
-    end_date || null,
-    reminder_window_minutes,
-    is_critical ?? false,
-  ]);
-
-  return rows[0];
-};
-
-const findPrescriptionById = async (prescription_id) => {
-  const { rows } = await db.query(
-    'SELECT * FROM prescriptions WHERE prescription_id = $1',
-    [prescription_id],
-  );
-  return rows[0];
-};
-
-const findPrescriptionsByPatient = async (patient_id, { includeInactive = false } = {}) => {
-  const statusFilter = includeInactive ? '' : 'AND is_active = true';
-  const query = `
-    SELECT *
-    FROM prescriptions
-    WHERE patient_id = $1
-    ${statusFilter}
-    ORDER BY start_date DESC, created_at DESC;
-  `;
-  const { rows } = await db.query(query, [patient_id]);
-  return rows;
-};
-
-const updatePrescription = async (prescription_id, updates) => {
-  const allowedFields = [
-    'medication_name',
-    'dosage',
-    'instructions',
-    'frequency_per_day',
-    'dosing_times',
-    'start_date',
-    'end_date',
-    'reminder_window_minutes',
-    'is_critical',
-  ];
-
-  const setClauses = [];
-  const values = [];
-  let index = 1;
-
-  allowedFields.forEach((field) => {
-    if (Object.prototype.hasOwnProperty.call(updates, field)) {
-      setClauses.push(`${field} = $${index}`);
-      values.push(updates[field]);
-      index += 1;
-    }
+/**
+ * Create a new prescription
+ * @param {object} data - Prescription data { patient_id, doctor_user_id, medication_name, dosage, frequency, duration, instructions }
+ * @returns {Promise<object>} - The created prescription
+ */
+export const createPrescription = async (data) => {
+  return prisma.prescriptions.create({
+    data,
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
   });
-
-  if (!setClauses.length) {
-    return findPrescriptionById(prescription_id);
-  }
-
-  setClauses.push(`updated_at = NOW()`);
-
-  const query = `
-    UPDATE prescriptions
-    SET ${setClauses.join(', ')}
-    WHERE prescription_id = $${index}
-    RETURNING *;
-  `;
-
-  values.push(prescription_id);
-
-  const { rows } = await db.query(query, values);
-  return rows[0];
 };
 
-const setPrescriptionStatus = async (prescription_id, is_active) => {
-  const query = `
-    UPDATE prescriptions
-    SET is_active = $1,
-        updated_at = NOW()
-    WHERE prescription_id = $2
-    RETURNING *;
-  `;
-  const { rows } = await db.query(query, [is_active, prescription_id]);
-  return rows[0];
+/**
+ * Find all prescriptions for a patient
+ * @param {string} patientId - The patient ID
+ * @returns {Promise<array>} - Array of prescriptions for the patient
+ */
+export const findPrescriptionsByPatientId = async (patientId) => {
+  return prisma.prescriptions.findMany({
+    where: { patient_id: patientId },
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
 };
 
-const listActiveMedicationNames = async (patient_id, excludePrescriptionId = null) => {
-  const params = [patient_id];
-  let filter = '';
-
-  if (excludePrescriptionId) {
-    params.push(excludePrescriptionId);
-    filter = 'AND prescription_id <> $2';
-  }
-
-  const query = `
-    SELECT medication_name
-    FROM prescriptions
-    WHERE patient_id = $1
-      AND is_active = true
-      ${filter}
-  `;
-
-  const { rows } = await db.query(query, params);
-  return rows.map((row) => row.medication_name);
+/**
+ * Find a prescription by ID
+ * @param {string} prescriptionId - The prescription ID
+ * @returns {Promise<object|null>} - The prescription or null if not found
+ */
+export const findPrescriptionById = async (prescriptionId) => {
+  return prisma.prescriptions.findUnique({
+    where: { prescription_id: prescriptionId },
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+  });
 };
 
-module.exports = {
-  createPrescription,
-  findPrescriptionById,
-  findPrescriptionsByPatient,
-  updatePrescription,
-  setPrescriptionStatus,
-  listActiveMedicationNames,
+/**
+ * Update a prescription
+ * @param {string} prescriptionId - The prescription ID
+ * @param {object} data - Updated prescription data
+ * @returns {Promise<object>} - The updated prescription
+ * @throws {Error} - If prescription not found
+ */
+export const updatePrescription = async (prescriptionId, data) => {
+  return prisma.prescriptions.update({
+    where: { prescription_id: prescriptionId },
+    data,
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Delete a prescription
+ * @param {string} prescriptionId - The prescription ID
+ * @returns {Promise<object>} - The deleted prescription
+ * @throws {Error} - If prescription not found
+ */
+export const deletePrescription = async (prescriptionId) => {
+  return prisma.prescriptions.delete({
+    where: { prescription_id: prescriptionId },
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Find all prescriptions
+ * @returns {Promise<array>} - Array of all prescriptions
+ */
+export const findAllPrescriptions = async () => {
+  return prisma.prescriptions.findMany({
+    include: {
+      patient: true,
+      doctor: { 
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Find an active prescription by medication name and patient ID
+ * @param {string} patientId - The patient ID
+ * @param {string} medicationName - The medication name
+ * @returns {Promise<object|null>} - The active prescription or null if not found
+ */
+export const findActivePrescription = async (patientId, medicationName) => {
+  return prisma.prescriptions.findFirst({
+    where: {
+      patient_id: patientId,
+      medication_name: {
+        equals: medicationName,
+        mode: 'insensitive', 
+      },
+      is_active: true,
+      OR: [
+        { end_date: null }, 
+        { end_date: { gte: new Date() } }, 
+      ],
+    },
+    select: {
+      prescription_id: true,
+    },
+    orderBy: { created_at: 'desc' },
+  });
 };

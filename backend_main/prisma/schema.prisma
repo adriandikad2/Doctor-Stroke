@@ -1,0 +1,351 @@
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// =========================================================
+// 1. KONFIGURASI DASAR
+// =========================================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// 2. ENUMS (TIPE DATA KUSTOM)
+// =========================================================
+// Semua ENUM dari draf Anda yang relevan, KECUALI 'weekly_slot_enum'
+enum gender_enum {
+  MALE
+  FEMALE
+}
+
+enum doctor_specialization_enum {
+  NEUROLOGIST
+  PHYSIATRIST
+}
+
+enum therapist_specialization_enum {
+  PHYSICAL
+  OCCUPATIONAL
+  RECREATIONAL
+  SPEECH
+  PSYCHOLOGIST
+  DIETITIAN // Menambahkan ini untuk nutrisi
+}
+
+// ENUM inti untuk Arsitektur Hybrid
+enum user_role_enum {
+  doctor
+  therapist
+  family
+}
+
+// ENUM untuk membedakan log (Kunci untuk Fitur AI)
+enum author_role_enum {
+  family
+  medical
+}
+
+// ENUMs untuk tabel fitur
+enum appointment_status_enum {
+  scheduled
+  completed
+  canceled
+}
+
+enum medication_adherence_status_enum {
+  taken
+  missed
+  delayed
+}
+
+enum meal_type_enum {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+// =========================================================
+// 3. ARSITEKTUR INTI (HYBRID MODEL)
+// =========================================================
+
+// Tabel 1: Master Autentikasi (Hanya untuk Login)
+model users {
+  user_id       String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  password_hash String
+  role          user_role_enum
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // --- Relasi (Satu-ke-Satu ke Profil Detail) ---
+  doctor_profile    doctor_profiles?
+  therapist_profile therapist_profiles?
+  family_profile    family_profiles?
+
+  // --- Relasi (Hal-hal yang "Dilakukan" User) ---
+  // Terhubung ke pasien mana saja (sebagai dokter/terapis/keluarga)
+  care_team_links       patient_care_team[]
+  // Slot ketersediaan (jika medical)
+  availability_slots    availability_slots[]
+  // Janji temu yang dibooking (jika family)
+  booked_appointments   appointments[]
+  // Resep yang ditulis (jika doctor)
+  prescriptions         prescriptions[]
+  // Log kepatuhan (jika family/medical)
+  adherence_logs        medication_adherence_logs[]
+  // Profil nutrisi yang diupdate (jika medical)
+  nutrition_updates     nutrition_profiles[]
+  // Log makanan (jika family)
+  meal_logs             meal_logs[]
+  // Snapshot yang direkam (jika family/medical)
+  snapshots             patient_progress_snapshots[]
+  // Log progres yang ditulis (jika family/medical)
+  progress_logs         progress_logs[]
+
+  @@map("users")
+}
+
+// Tabel 2: Detail Dokter
+model doctor_profiles {
+  doctor_profile_id String                   @id @default(uuid()) @db.Uuid
+  user                users                    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id             String                   @unique @db.Uuid // Kunci relasi 1-ke-1
+  first_name        String
+  last_name         String
+  medical_license   String                   @unique
+  specialization    doctor_specialization_enum
+  hospital_name     String?
+  contact_number    String?
+
+  @@map("doctor_profiles")
+}
+
+// Tabel 3: Detail Terapis
+model therapist_profiles {
+  therapist_profile_id String                      @id @default(uuid()) @db.Uuid
+  user                 users                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id              String                      @unique @db.Uuid // Kunci relasi 1-ke-1
+  first_name           String
+  last_name            String
+  medical_license      String                      @unique
+  specialization       therapist_specialization_enum
+  hospital_name        String?
+  contact_number       String?
+
+  @@map("therapist_profiles")
+}
+
+// Tabel 4: Detail Keluarga
+model family_profiles {
+  family_profile_id String      @id @default(uuid()) @db.Uuid
+  user                users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id             String      @unique @db.Uuid // Kunci relasi 1-ke-1
+  first_name        String
+  last_name         String
+  gender            gender_enum?
+  home_address      String?
+  contact_number    String?
+
+  @@map("family_profiles")
+}
+
+// Tabel 5: Profil Pasien (Subjek yang Dirawat)
+model patient_profiles {
+  patient_id      String    @id @default(uuid()) @db.Uuid
+  name            String
+  date_of_birth   DateTime  @db.Date
+  gender          gender_enum?
+  medical_history String?
+  unique_code     String    @unique @db.VarChar(10) // Kunci untuk alur Model B
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // --- Relasi (Hal-hal yang "Dimiliki" Pasien) ---
+  care_team_links     patient_care_team[]
+  appointments        appointments[]
+  prescriptions       prescriptions[]
+  adherence_logs      medication_adherence_logs[]
+  nutrition_profile   nutrition_profiles? // Relasi 1-ke-1
+  meal_logs           meal_logs[]
+  snapshots           patient_progress_snapshots[]
+  progress_logs       progress_logs[]
+
+  @@map("patient_profiles")
+}
+
+// Tabel 6: "Lem" Penghubung (Jantung Aplikasi)
+model patient_care_team {
+  link_id    String           @id @default(uuid()) @db.Uuid
+  user       users            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_id    String           @db.Uuid
+  patient    patient_profiles @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id String           @db.Uuid
+
+  @@unique([user_id, patient_id]) // Mencegah duplikasi koneksi
+  @@map("patient_care_team")
+}
+
+// =========================================================
+// 4. FITUR PENJADWALAN (DINAMIS)
+// =========================================================
+
+// Tabel 7: Slot Ketersediaan (Dibuka oleh Dokter/Terapis)
+model availability_slots {
+  slot_id         String       @id @default(uuid()) @db.Uuid
+  medical_user    users        @relation(fields: [medical_user_id], references: [user_id], onDelete: Cascade)
+  medical_user_id String       @db.Uuid
+  start_time      DateTime     @db.Timestamp()
+  end_time        DateTime     @db.Timestamp()
+  is_booked       Boolean      @default(false)
+  
+  appointment     appointments? // Relasi 1-ke-1 ke janji temu
+
+  @@unique([medical_user_id, start_time]) // Dokter tidak bisa punya slot tumpang tindih
+  @@map("availability_slots")
+}
+
+// Tabel 8: Janji Temu (Dipesan oleh Keluarga)
+model appointments {
+  appointment_id    String                  @id @default(uuid()) @db.Uuid
+  slot              availability_slots    @relation(fields: [slot_id], references: [slot_id], onDelete: Cascade)
+  slot_id           String                  @unique @db.Uuid // Satu slot hanya untuk satu janji
+  patient           patient_profiles      @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id        String                  @db.Uuid
+  booked_by_user    users                   @relation(fields: [booked_by_user_id], references: [user_id], onDelete: Cascade)
+  booked_by_user_id String                  @db.Uuid
+  status            appointment_status_enum @default(scheduled)
+  created_at        DateTime                @default(now())
+
+  @@map("appointments")
+}
+
+// =========================================================
+// 5. FITUR KLINIS (DIAMBIL DARI DRAF TIM ANDA)
+// =========================================================
+
+// Tabel 9: Resep Obat (oleh Dokter)
+model prescriptions {
+  prescription_id String    @id @default(uuid()) @db.Uuid
+  patient           patient_profiles @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id        String    @db.Uuid
+  doctor            users     @relation(fields: [doctor_user_id], references: [user_id], onDelete: SetNull)
+  doctor_user_id    String    @db.Uuid
+  medication_name   String
+  dosage            String
+  instructions      String?
+  frequency_per_day Int
+  dosing_times      String[] // Array Waktu, misal: ["08:00", "16:00"]
+  start_date        DateTime  @db.Date
+  end_date          DateTime? @db.Date
+  is_active         Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  adherence_logs    medication_adherence_logs[] // Relasi ke log kepatuhan
+
+  @@map("prescriptions")
+}
+
+// Tabel 10: Log Kepatuhan Obat (oleh Keluarga/Terapis)
+model medication_adherence_logs {
+  adherence_id    String                         @id @default(uuid()) @db.Uuid
+  prescription      prescriptions                @relation(fields: [prescription_id], references: [prescription_id], onDelete: Cascade)
+  prescription_id   String                         @db.Uuid
+  patient           patient_profiles             @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id        String                         @db.Uuid
+  logged_by_user    users                        @relation(fields: [logged_by_user_id], references: [user_id], onDelete: SetNull)
+  logged_by_user_id String                         @db.Uuid
+  status            medication_adherence_status_enum
+  scheduled_time    DateTime?                      @db.Timestamp()
+  taken_time        DateTime?                      @db.Timestamp()
+  notes             String?
+  created_at        DateTime                       @default(now())
+
+  @@map("medication_adherence_logs")
+}
+
+// Tabel 11: Profil Nutrisi (oleh Terapis/Dokter)
+model nutrition_profiles {
+  patient           patient_profiles @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id        String           @id @db.Uuid // Relasi 1-ke-1
+  calorie_target_min Int              @default(1400)
+  calorie_target_max Int              @default(1800)
+  sodium_limit_mg   Int              @default(1500)
+  fiber_target_g    Int              @default(25)
+  fluid_limit_ml    Int              @default(2000)
+  updated_by_user   users            @relation(fields: [updated_by_user_id], references: [user_id], onDelete: SetNull)
+  updated_by_user_id String           @db.Uuid
+  updated_at        DateTime         @updatedAt
+
+  @@map("nutrition_profiles")
+}
+
+// Tabel 12: Log Makanan Harian (oleh Keluarga)
+model meal_logs {
+  meal_id         String        @id @default(uuid()) @db.Uuid
+  patient           patient_profiles  @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id        String        @db.Uuid
+  logged_by_user    users         @relation(fields: [logged_by_user_id], references: [user_id], onDelete: Cascade)
+  logged_by_user_id String        @db.Uuid
+  meal_type         meal_type_enum
+  foods             String[] // Array makanan
+  sodium_mg       Int           @default(0)
+  calories        Int           @default(0)
+  fiber_g         Int           @default(0)
+  logged_for      DateTime      @db.Date
+  created_at      DateTime      @default(now())
+
+  @@map("meal_logs")
+}
+
+// Tabel 13: Snapshot Vital Harian (oleh Keluarga/Terapis)
+model patient_progress_snapshots {
+  entry_id                 String    @id @default(uuid()) @db.Uuid
+  patient                    patient_profiles  @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id                 String    @db.Uuid
+  recorded_by_user           users     @relation(fields: [recorded_by_user_id], references: [user_id], onDelete: Cascade)
+  recorded_by_user_id        String    @db.Uuid
+  recorded_at                DateTime  @db.Timestamp()
+  mood                       String?
+  symptom_score            Int?
+  mobility_score           Int?
+  exercise_completed       Boolean?
+  blood_pressure_systolic  Int?
+  blood_pressure_diastolic Int?
+  notes                      String?
+  created_at                 DateTime  @default(now())
+
+  @@map("patient_progress_snapshots")
+}
+
+// Tabel 14: Log Progres Teks (Sesuai Diskusi AI)
+model progress_logs {
+  log_id         String    @id @default(uuid()) @db.Uuid
+  patient          patient_profiles @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_id       String    @db.Uuid
+  author_user      users     @relation(fields: [author_user_id], references: [user_id], onDelete: Cascade)
+  author_user_id   String    @db.Uuid
+  author_role      author_role_enum // 'family' (untuk AI) atau 'medical' (klinis)
+  log_text         String
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("progress_logs")
+}
+
+// Tabel 15: Kamus Interaksi Obat (Dari Draf Anda)
+model medication_interactions {
+  interaction_id String @id @default(uuid()) @db.Uuid
+  medication_a   String
+  medication_b   String
+  severity       String // 'low', 'moderate', 'high'
+  description    String
+
+  @@unique([medication_a, medication_b])
+  @@map("medication_interactions")
+}

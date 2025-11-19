@@ -1,27 +1,37 @@
-const express = require('express');
-const {
-  createPrescription,
-  updatePrescription,
-  getPrescriptionsForPatient,
-  updatePrescriptionStatus,
-  logAdherenceEvent,
-  getAdherenceSummary,
-  checkMedicationInteractions,
-  getUpcomingReminders,
-} = require('../controllers/prescription.controller');
-const { authenticateToken } = require('../middleware/auth.middleware');
+import express from 'express';
+import * as prescriptionController from '../controllers/prescription.controller.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/', authenticateToken, createPrescription);
-router.put('/:prescriptionId', authenticateToken, updatePrescription);
-router.patch('/:prescriptionId/status', authenticateToken, updatePrescriptionStatus);
-router.get('/patient/:patientId', authenticateToken, getPrescriptionsForPatient);
+/**
+ * GET /api/prescriptions/all
+ * Get all prescriptions (admin/testing endpoint)
+ */
+router.get('/all', authenticateToken, prescriptionController.handleGetAllPrescriptions);
 
-router.post('/:prescriptionId/adherence', authenticateToken, logAdherenceEvent);
-router.get('/:prescriptionId/adherence', authenticateToken, getAdherenceSummary);
-router.get('/:prescriptionId/reminders', authenticateToken, getUpcomingReminders);
+/**
+ * POST /api/prescriptions/
+ * Create a new prescription (doctor only)
+ */
+router.post('/', authenticateToken, prescriptionController.handleCreate);
 
-router.post('/interactions/check', authenticateToken, checkMedicationInteractions);
+/**
+ * GET /api/prescriptions/:patientId
+ * Get all prescriptions for a patient
+ */
+router.get('/:patientId', authenticateToken, prescriptionController.handleGetByPatientId);
 
-module.exports = router;
+/**
+ * PUT /api/prescriptions/:prescriptionId
+ * Update a prescription (doctor only)
+ */
+router.put('/:prescriptionId', authenticateToken, prescriptionController.handleUpdate);
+
+/**
+ * DELETE /api/prescriptions/:prescriptionId
+ * Delete a prescription (doctor only)
+ */
+router.delete('/:prescriptionId', authenticateToken, prescriptionController.handleDelete);
+
+export default router;

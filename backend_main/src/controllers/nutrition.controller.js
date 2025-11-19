@@ -1,92 +1,97 @@
-const nutritionService = require('../services/nutrition.service');
+import * as nutritionService from '../services/nutrition.service.js';
 
-const upsertProfile = async (req, res) => {
+/**
+ * Handle getting nutrition profile for a patient
+ * @param {object} req - Express request object with params
+ * @param {object} res - Express response object
+ */
+export const handleGetProfile = async (req, res) => {
   try {
-    const profile = await nutritionService.saveNutritionProfile(
-      req.params.patientId,
-      req.body,
-      req.user,
-    );
+    const { patientId } = req.params;
+
+    const profile = await nutritionService.getProfile(patientId);
 
     res.status(200).json({
-      message: 'Update Nutrition Profile Successful',
-      profile,
+      success: true,
+      message: 'Profil nutrisi berhasil diambil',
+      data: profile,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil profil nutrisi',
+    });
   }
 };
 
-const getProfile = async (req, res) => {
+/**
+ * Handle updating nutrition profile for a patient
+ * @param {object} req - Express request object with user, params, and body
+ * @param {object} res - Express response object
+ */
+export const handleUpdateProfile = async (req, res) => {
   try {
-    const profile = await nutritionService.getNutritionProfile(
-      req.params.patientId,
-      req.user,
-    );
+    const { patientId } = req.params;
+    const data = req.body;
+    const user = req.user;
+
+    const updatedProfile = await nutritionService.updateProfile(patientId, data, user);
 
     res.status(200).json({
-      profile,
+      success: true,
+      message: 'Profil nutrisi berhasil diperbarui',
+      data: updatedProfile,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const generatePlan = async (req, res) => {
-  try {
-    const days = req.query.days ? parseInt(req.query.days, 10) : 7;
-    const plan = await nutritionService.generateDietPlan(
-      req.params.patientId,
-      req.user,
-      days,
-    );
-
-    res.status(200).json(plan);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const logMeal = async (req, res) => {
-  try {
-    const result = await nutritionService.logMeal(
-      req.params.patientId,
-      req.body,
-      req.user,
-    );
-
-    res.status(201).json({
-      message: 'Meal logged successfully',
-      ...result,
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal memperbarui profil nutrisi',
     });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
 };
 
-const listMeals = async (req, res) => {
+/**
+ * Handle getting all nutrition profiles
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export const handleGetAllProfiles = async (req, res) => {
   try {
-    const meals = await nutritionService.listMeals(
-      req.params.patientId,
-      req.user,
-      {
-        startDate: req.query.startDate,
-        endDate: req.query.endDate,
-      },
-    );
+    const profiles = await nutritionService.getAllProfiles();
 
     res.status(200).json({
-      meals,
+      success: true,
+      message: 'Semua profil nutrisi berhasil diambil',
+      data: profiles,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Gagal mengambil profil nutrisi',
+    });
   }
 };
 
-module.exports = {
-  upsertProfile,
-  getProfile,
-  generatePlan,
-  logMeal,
-  listMeals,
+/**
+ * Handle getting nutrition feedback for a patient's daily meals
+ * @param {object} req 
+ * @param {object} res 
+ */
+export const handleGetMealFeedback = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const feedback = await nutritionService.getMealFeedback(patientId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Feedback nutrition achieved successfully',
+      data: feedback,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to get nutrition feedback',
+    });
+  }
 };

@@ -1,22 +1,38 @@
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+import { verifyToken } from '../utils/jwt.util.js';
 
-const authenticateToken = async (req, res, next) => {
+/**
+ * Middleware to authenticate JWT tokens
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
+export const authenticateToken = (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Access token is required' });
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required',
+      });
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid or expired token',
+      });
+    }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Attach user info to request object
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    res.status(403).json({
+      success: false,
+      message: 'Token verification failed',
+    });
   }
 };
-
-module.exports = { authenticateToken };
