@@ -1,138 +1,140 @@
-const prescriptionService = require('../services/prescription.service');
+import * as prescriptionService from '../services/prescription.service.js';
 
-const createPrescription = async (req, res) => {
+/**
+ * Handle creating a new prescription
+ * @param {object} req - Express request object with user and body
+ * @param {object} res - Express response object
+ */
+export const handleCreate = async (req, res) => {
   try {
-    const prescription = await prescriptionService.createPrescription(req.body, req.user);
+    const prescriptionData = req.body;
+    const user = req.user;
+
+    if (!prescriptionData.patient_id || !prescriptionData.medication_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'patient_id dan medication_name diperlukan',
+      });
+    }
+
+    const newPrescription = await prescriptionService.addNewPrescription(
+      prescriptionData,
+      user
+    );
+
     res.status(201).json({
+      success: true,
       message: 'Resep berhasil dibuat',
-      prescription,
+      data: newPrescription,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal membuat resep',
+    });
   }
 };
 
-const updatePrescription = async (req, res) => {
+/**
+ * Handle getting prescriptions by patient ID
+ * @param {object} req - Express request object with params
+ * @param {object} res - Express response object
+ */
+export const handleGetByPatientId = async (req, res) => {
   try {
-    const updated = await prescriptionService.updatePrescription(
-      req.params.prescriptionId,
-      req.body,
-      req.user,
-    );
-    res.status(200).json({
-      message: 'Resep diperbarui',
-      prescription: updated,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    const { patientId } = req.params;
 
-const getPrescriptionsForPatient = async (req, res) => {
-  try {
-    const includeInactive = req.query.includeInactive === 'true';
-    const prescriptions = await prescriptionService.getPrescriptionsForPatient(
-      req.params.patientId,
-      req.user,
-      includeInactive,
-    );
+    const prescriptions = await prescriptionService.getPrescriptions(patientId);
 
     res.status(200).json({
-      message: 'Daftar resep berhasil diambil',
-      prescriptions,
+      success: true,
+      message: 'Resep pasien berhasil diambil',
+      data: prescriptions,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil resep',
+    });
   }
 };
 
-const updatePrescriptionStatus = async (req, res) => {
+/**
+ * Handle updating a prescription
+ * @param {object} req - Express request object with user, params, and body
+ * @param {object} res - Express response object
+ */
+export const handleUpdate = async (req, res) => {
   try {
-    const updated = await prescriptionService.togglePrescriptionStatus(
-      req.params.prescriptionId,
-      req.body.is_active,
-      req.user,
+    const { prescriptionId } = req.params;
+    const data = req.body;
+    const user = req.user;
+
+    const updatedPrescription = await prescriptionService.updatePrescription(
+      prescriptionId,
+      data,
+      user
     );
+
     res.status(200).json({
-      message: 'Status resep diperbarui',
-      prescription: updated,
+      success: true,
+      message: 'Resep berhasil diperbarui',
+      data: updatedPrescription,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const logAdherenceEvent = async (req, res) => {
-  try {
-    const record = await prescriptionService.logAdherence(
-      req.params.prescriptionId,
-      req.body,
-      req.user,
-    );
-    res.status(201).json({
-      message: 'Catatan kepatuhan tersimpan',
-      adherence: record,
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal memperbarui resep',
     });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
 };
 
-const getAdherenceSummary = async (req, res) => {
+/**
+ * Handle deleting a prescription
+ * @param {object} req - Express request object with user and params
+ * @param {object} res - Express response object
+ */
+export const handleDelete = async (req, res) => {
   try {
-    const days = req.query.days ? parseInt(req.query.days, 10) : 7;
-    const summary = await prescriptionService.getAdherenceSummary(
-      req.params.prescriptionId,
-      req.user,
-      days,
-    );
-    res.status(200).json(summary);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    const { prescriptionId } = req.params;
+    const user = req.user;
 
-const checkMedicationInteractions = async (req, res) => {
-  try {
-    const conflicts = await prescriptionService.checkInteractions(
-      req.body.patient_id,
-      req.body.medication_name,
-      req.user,
-      req.body.exclude_prescription_id,
+    const deletedPrescription = await prescriptionService.deletePrescription(
+      prescriptionId,
+      user
     );
+
     res.status(200).json({
-      medication: req.body.medication_name,
-      conflicts,
+      success: true,
+      message: 'Resep berhasil dihapus',
+      data: deletedPrescription,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal menghapus resep',
+    });
   }
 };
 
-const getUpcomingReminders = async (req, res) => {
+/**
+ * Handle getting all prescriptions (admin/testing endpoint)
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export const handleGetAllPrescriptions = async (req, res) => {
   try {
-    const days = req.query.days ? parseInt(req.query.days, 10) : 3;
-    const reminders = await prescriptionService.getUpcomingReminders(
-      req.params.prescriptionId,
-      req.user,
-      days,
-    );
+    const prescriptions = await prescriptionService.getAllPrescriptions();
+
     res.status(200).json({
-      message: 'Reminder mendatang berhasil dihitung',
-      reminders,
+      success: true,
+      message: 'Semua resep berhasil diambil',
+      data: prescriptions,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil resep',
+    });
   }
-};
-
-module.exports = {
-  createPrescription,
-  updatePrescription,
-  getPrescriptionsForPatient,
-  updatePrescriptionStatus,
-  logAdherenceEvent,
-  getAdherenceSummary,
-  checkMedicationInteractions,
-  getUpcomingReminders,
 };

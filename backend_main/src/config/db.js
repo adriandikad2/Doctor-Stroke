@@ -1,13 +1,5 @@
-require('dotenv').config();
-const { Pool } = require('pg');
+import { PrismaClient } from '@prisma/client';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+const prisma = new PrismaClient();
 
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-};
+export default prisma;

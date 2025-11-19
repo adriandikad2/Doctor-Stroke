@@ -1,19 +1,25 @@
-const express = require('express');
-const {
-  upsertProfile,
-  getProfile,
-  generatePlan,
-  logMeal,
-  listMeals,
-} = require('../controllers/nutrition.controller');
-const { authenticateToken } = require('../middleware/auth.middleware');
+import express from 'express';
+import * as nutritionController from '../controllers/nutrition.controller.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.put('/patient/:patientId/profile', authenticateToken, upsertProfile);
-router.get('/patient/:patientId/profile', authenticateToken, getProfile);
-router.get('/patient/:patientId/plan', authenticateToken, generatePlan);
-router.post('/patient/:patientId/meals', authenticateToken, logMeal);
-router.get('/patient/:patientId/meals', authenticateToken, listMeals);
+/**
+ * GET /api/nutrition/all
+ * Get all nutrition profiles (admin/testing endpoint)
+ */
+router.get('/all', authenticateToken, nutritionController.handleGetAllProfiles);
 
-module.exports = router;
+/**
+ * GET /api/nutrition/:patientId
+ * Get nutrition profile for a patient
+ */
+router.get('/:patientId', authenticateToken, nutritionController.handleGetProfile);
+
+/**
+ * PUT /api/nutrition/:patientId
+ * Update or create nutrition profile (doctor/therapist only)
+ */
+router.put('/:patientId', authenticateToken, nutritionController.handleUpdateProfile);
+
+export default router;

@@ -1,25 +1,45 @@
-const authService = require('../services/auth.service');
+import * as authService from '../services/auth.service.js';
 
-const handleRegister = async (req, res) => {
+/**
+ * Handle user registration
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export const handleRegister = async (req, res) => {
   try {
-    const user = await authService.registerUser(req.body);
-    res.status(201).json({ message: 'User registered successfully', user });
+    const userData = req.body;
+    const newUser = await authService.registerUser(userData);
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: newUser,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Registration failed',
+    });
   }
 };
 
-const handleLogin = async (req, res) => {
+/**
+ * Handle user login
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export const handleLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const { user, token } = await authService.loginUser(email, password);
-    res.status(200).json({ message: 'Login successful', user, token });
+    const result = await authService.loginUser(email, password);
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: result,
+    });
   } catch (error) {
-    res.status(401).json({ message: error.message });
+    res.status(401).json({
+      success: false,
+      message: error.message || 'Login failed',
+    });
   }
-};
-
-module.exports = {
-  handleRegister,
-  handleLogin,
 };

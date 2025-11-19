@@ -1,47 +1,125 @@
-const userRepository = require('../repositories/user.repository');
-const { hashPassword, comparePassword } = require('../utils/hash.util');
-const { createToken } = require('../utils/jwt.util');
+import prisma from '../config/db.js';
+import * as userRepository from '../repositories/user.repository.js';
+import * as profileRepository from '../repositories/profile.repository.js';
+import { hashPassword, comparePassword } from '../utils/hash.util.js';
+import { createToken } from '../utils/jwt.util.js';
 
-const registerUser = async (userData) => {
-  const { name, email, password, role, specialty } = userData;
+/**
+ * Register a new user with a profile based on role
+ * @param {object} userData - User registration data
+ * @returns {Promise<object>} - The created user (without password_hash)
+ * @throws {Error} - If user already exists or transaction fails
+ */
+export const registerUser = async (userData) => {
+  const { email, password, role, first_name, last_name, ...profileData } = userData;
 
+  // Check if user already exists
+>>>>>>> a5731e61b76cf07b483788dc707954ce6d7ae7bf
   const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
     throw new Error('User with this email already exists');
   }
 
-  const hashedPassword = await hashPassword(password);
-  const newUser = {
-    name,
-    email,
-    password_hash: hashedPassword,
-    role: role || 'caregiver',
-    specialty: specialty || null
-  };
+  // Hash the password
+  const password_hash = await hashPassword(password);
 
-  const createdUser = await userRepository.createUser(newUser);
-  delete createdUser.password_hash;
-  return createdUser;
+  // Execute transaction: create user and corresponding profile
+  const newUser = await prisma.$transaction(async (tx) => {
+    // Create the user
+    const user = await userRepository.createUser(
+      {
+        email,
+        password_hash,
+        role,
+      },
+      tx
+    );
+
+    // Create the corresponding profile based on role
+    switch (user.role) {
+      case 'doctor':
+        await profileRepository.createDoctorProfile(
+          {
+            user_id: user.user_id,
+            first_name,
+            last_name,
+            ...profileData,
+          },
+          tx
+        );
+        break;
+
+      case 'therapist':
+        await profileRepository.createTherapistProfile(
+          {
+            user_id: user.user_id,
+            first_name,
+            last_name,
+            ...profileData,
+          },
+          tx
+        );
+        break;
+
+      case 'family':
+        await profileRepository.createFamilyProfile(
+          {
+            user_id: user.user_id,
+            first_name,
+            last_name,
+            ...profileData,
+          },
+          tx
+        );
+        break;
+
+      default:
+        throw new Error('Invalid role provided');
+    }
+
+    return user;
+  });
+
+  // Return user without password hash
+  const { password_hash: _, ...userWithoutPassword } = newUser;
+  return userWithoutPassword;
 };
 
-const loginUser = async (email, password) => {
+/**
+ * Login a user and generate a JWT token
+ * @param {string} email - The user's email
+ * @param {string} password - The user's password (plain text)
+ * @returns {Promise<object>} - Object containing token and user info
+ * @throws {Error} - If credentials are invalid
+ */
+export const loginUser = async (email, password) => {
+  // Find user by email
   const user = await userRepository.findUserByEmail(email);
   if (!user) {
-    throw new Error('Invalid credentials');
+    throw new Error('Invalid email or password');
   }
 
+  // Compare passwords
   const isPasswordValid = await comparePassword(password, user.password_hash);
   if (!isPasswordValid) {
-    throw new Error('Invalid credentials');
+    throw new Error('Invalid email or password');
   }
 
-  const token = createToken({ userId: user.user_id, role: user.role });
-  delete user.password_hash;
+  // Create JWT token
+  const payload = {
+    user_id: user.user_id,
+    role: user.role,
+    email: user.email,
+  };
+  const token = createToken(payload);
 
-  return { user, token };
-};
-
-module.exports = {
-  registerUser,
-  loginUser,
+  // Return token and user info (without password hash)
+  return {
+    token,
+    user: {
+      user_id: user.user_id,
+      email: user.email,
+      role: user.role,
+    },
+  };
 };
