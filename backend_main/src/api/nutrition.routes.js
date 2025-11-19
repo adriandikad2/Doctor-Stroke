@@ -22,4 +22,10 @@ router.get('/:patientId', authenticateToken, nutritionController.handleGetProfil
  */
 router.put('/:patientId', authenticateToken, nutritionController.handleUpdateProfile);
 
+/**
+ * GET /api/nutrition/:patientId/feedback
+ * Get detailed feedback on today's logged meals compared to targets (Family only)
+ */
+router.get('/:patientId/feedback', authenticateToken, nutritionController.handleGetMealFeedback);
+
 export default router;

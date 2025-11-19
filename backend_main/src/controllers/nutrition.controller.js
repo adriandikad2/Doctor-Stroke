@@ -71,3 +71,27 @@ export const handleGetAllProfiles = async (req, res) => {
     });
   }
 };
+
+/**
+ * Handle getting nutrition feedback for a patient's daily meals
+ * @param {object} req 
+ * @param {object} res 
+ */
+export const handleGetMealFeedback = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const feedback = await nutritionService.getMealFeedback(patientId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Feedback nutrition achieved successfully',
+      data: feedback,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to get nutrition feedback',
+    });
+  }
+};

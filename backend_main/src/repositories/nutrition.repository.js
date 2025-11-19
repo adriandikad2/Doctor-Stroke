@@ -63,3 +63,34 @@ export const findAllNutritionProfiles = async () => {
     },
   });
 };
+
+/**
+ * Find meals logged for a specific date for a patient
+ * @param {string} patientId - Patient ID
+ * @param {Date} date - Date of the meal logs
+ * @returns {Promise<array>} 
+ */
+export const findMealLogsByDate = async (patientId, date) => {
+  // Find meals logged for a specific day 
+  const startOfDay = new Date(date);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  return prisma.meal_logs.findMany({
+    where: {
+      patient_id: patientId,
+      logged_for: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+    select: {
+      meal_type: true,
+      foods: true,
+      sodium_mg: true,
+      calories: true,
+      fiber_g: true,
+    },
+  });
+};
