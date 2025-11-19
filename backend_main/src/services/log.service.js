@@ -1,5 +1,5 @@
 import * as logRepository from '../repositories/log.repository.js';
-import * as prescriptionRepository from '../repositories/prescription.repository.js'; 
+import * as prescriptionRepository from '../repositories/prescription.repository.js';
 
 /**
  * Add a new progress log entry
@@ -65,32 +65,34 @@ export const getMealLogs = async (patientId) => {
 
 /**
  * Add a new medication adherence log entry
- * @param {object} data - Adherence log data { patient_id, medication_name, taken, notes }
+ * @param {object} data - Adherence log data { patient_id, medication_name, status, notes }
  * @param {object} user - Authenticated user { user_id, role }
  * @returns {Promise<object>} - The created adherence log
  * @throws {Error} - If required fields are missing or prescription not found
  */
 export const addAdherenceLog = async (data, user) => {
-  const { patient_id, medication_name, taken } = data;
+  // 1. Destructure medication_name, validate required fields
+  const { medication_name, ...payloadForPrisma } = data;
   
-  if (!patient_id || !medication_name || taken === undefined) {
-    throw new Error('patient_id, medication_name, dan taken diperlukan');
+  const { patient_id, status } = payloadForPrisma; 
+
+  if (!patient_id || !medication_name || !status) { 
+    throw new Error('patient_id, medication_name, dan status diperlukan'); 
   }
 
-  // 1. Find the active prescription for the medication and patient
+  // 2. Find the active prescription for the given medication and patient
   const activePrescription = await prescriptionRepository.findActivePrescription(
     patient_id,
     medication_name
   );
 
   if (!activePrescription) {
-    throw new Error(`Resep aktif untuk obat ${medication_name} tidak ditemukan untuk pasien ini. Pastikan nama obat sudah benar dan resep masih aktif.`);
+    throw new Error(`Resep aktif untuk obat ${medication_name} tidak ditemukan untuk pasien ini.`);
   }
 
-  // 2. Add the adherence log linked to the prescription
   return logRepository.createAdherenceLog({
-    ...data,
-    prescription_id: activePrescription.prescription_id, // Menambahkan Foreign Key
+    ...payloadForPrisma, 
+    prescription_id: activePrescription.prescription_id, 
     logged_by_user_id: user.user_id,
   });
 };

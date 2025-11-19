@@ -14,7 +14,6 @@ export const registerUser = async (userData) => {
   const { email, password, role, first_name, last_name, ...profileData } = userData;
 
   // Check if user already exists
->>>>>>> a5731e61b76cf07b483788dc707954ce6d7ae7bf
   const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
     throw new Error('User with this email already exists');

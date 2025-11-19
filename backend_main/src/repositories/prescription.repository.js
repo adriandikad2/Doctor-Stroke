@@ -10,7 +10,7 @@ export const createPrescription = async (data) => {
     data,
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
@@ -29,7 +29,7 @@ export const findPrescriptionsByPatientId = async (patientId) => {
     where: { patient_id: patientId },
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
@@ -49,7 +49,7 @@ export const findPrescriptionById = async (prescriptionId) => {
     where: { prescription_id: prescriptionId },
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
@@ -71,7 +71,7 @@ export const updatePrescription = async (prescriptionId, data) => {
     data,
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
@@ -91,7 +91,7 @@ export const deletePrescription = async (prescriptionId) => {
     where: { prescription_id: prescriptionId },
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
@@ -108,11 +108,38 @@ export const findAllPrescriptions = async () => {
   return prisma.prescriptions.findMany({
     include: {
       patient: true,
-      doctor_user: {
+      doctor: { 
         include: {
           doctor_profile: true,
         },
       },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Find an active prescription by medication name and patient ID
+ * @param {string} patientId - The patient ID
+ * @param {string} medicationName - The medication name
+ * @returns {Promise<object|null>} - The active prescription or null if not found
+ */
+export const findActivePrescription = async (patientId, medicationName) => {
+  return prisma.prescriptions.findFirst({
+    where: {
+      patient_id: patientId,
+      medication_name: {
+        equals: medicationName,
+        mode: 'insensitive', 
+      },
+      is_active: true,
+      OR: [
+        { end_date: null }, 
+        { end_date: { gte: new Date() } }, 
+      ],
+    },
+    select: {
+      prescription_id: true,
     },
     orderBy: { created_at: 'desc' },
   });
