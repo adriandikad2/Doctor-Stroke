@@ -1,4 +1,5 @@
 import * as logRepository from '../repositories/log.repository.js';
+import * as prescriptionRepository from '../repositories/prescription.repository.js'; 
 
 /**
  * Add a new progress log entry
@@ -67,14 +68,29 @@ export const getMealLogs = async (patientId) => {
  * @param {object} data - Adherence log data { patient_id, medication_name, taken, notes }
  * @param {object} user - Authenticated user { user_id, role }
  * @returns {Promise<object>} - The created adherence log
+ * @throws {Error} - If required fields are missing or prescription not found
  */
 export const addAdherenceLog = async (data, user) => {
-  if (!data.patient_id || !data.medication_name || data.taken === undefined) {
+  const { patient_id, medication_name, taken } = data;
+  
+  if (!patient_id || !medication_name || taken === undefined) {
     throw new Error('patient_id, medication_name, dan taken diperlukan');
   }
 
+  // 1. Find the active prescription for the medication and patient
+  const activePrescription = await prescriptionRepository.findActivePrescription(
+    patient_id,
+    medication_name
+  );
+
+  if (!activePrescription) {
+    throw new Error(`Resep aktif untuk obat ${medication_name} tidak ditemukan untuk pasien ini. Pastikan nama obat sudah benar dan resep masih aktif.`);
+  }
+
+  // 2. Add the adherence log linked to the prescription
   return logRepository.createAdherenceLog({
     ...data,
+    prescription_id: activePrescription.prescription_id, // Menambahkan Foreign Key
     logged_by_user_id: user.user_id,
   });
 };
@@ -86,7 +102,7 @@ export const addAdherenceLog = async (data, user) => {
  */
 export const getAdherenceLogs = async (patientId) => {
   if (!patientId) {
-    throw new Error('Patient ID diperlukan');
+    throw new Error('Patient ID is required');
   }
   return logRepository.findAdherenceLogs(patientId);
 };
@@ -99,7 +115,7 @@ export const getAdherenceLogs = async (patientId) => {
  */
 export const addSnapshotLog = async (data, user) => {
   if (!data.patient_id || !data.recorded_at) {
-    throw new Error('patient_id dan recorded_at diperlukan');
+    throw new Error('patient_id and recorded_at are required');
   }
 
   return logRepository.createSnapshotLog({
@@ -115,7 +131,7 @@ export const addSnapshotLog = async (data, user) => {
  */
 export const getSnapshotLogs = async (patientId) => {
   if (!patientId) {
-    throw new Error('Patient ID diperlukan');
+    throw new Error('Patient ID is required');
   }
   return logRepository.findSnapshotLogs(patientId);
 };
@@ -129,7 +145,7 @@ export const getSnapshotLogs = async (patientId) => {
  */
 export const updateProgressLog = async (logId, logText, user) => {
   if (!logId || !logText) {
-    throw new Error('Log ID dan log_text diperlukan');
+    throw new Error('Log ID dan log_text are required');
   }
   return logRepository.updateProgressLog(logId, logText, user.user_id);
 };
@@ -142,7 +158,7 @@ export const updateProgressLog = async (logId, logText, user) => {
  */
 export const deleteProgressLog = async (logId, user) => {
   if (!logId) {
-    throw new Error('Log ID diperlukan');
+    throw new Error('Log ID is required');
   }
   return logRepository.deleteProgressLog(logId, user.user_id);
 };
@@ -156,7 +172,7 @@ export const deleteProgressLog = async (logId, user) => {
  */
 export const updateMealLog = async (logId, data, user) => {
   if (!logId) {
-    throw new Error('Log ID diperlukan');
+    throw new Error('Log ID is required');
   }
   return logRepository.updateMealLog(logId, data, user.user_id);
 };
@@ -169,7 +185,7 @@ export const updateMealLog = async (logId, data, user) => {
  */
 export const deleteMealLog = async (logId, user) => {
   if (!logId) {
-    throw new Error('Log ID diperlukan');
+    throw new Error('Log ID is required');
   }
   return logRepository.deleteMealLog(logId, user.user_id);
 };
@@ -183,7 +199,7 @@ export const deleteMealLog = async (logId, user) => {
  */
 export const updateAdherenceLog = async (logId, data, user) => {
   if (!logId) {
-    throw new Error('Log ID diperlukan');
+    throw new Error('Log ID is required');
   }
   return logRepository.updateAdherenceLog(logId, data, user.user_id);
 };
@@ -196,7 +212,7 @@ export const updateAdherenceLog = async (logId, data, user) => {
  */
 export const deleteAdherenceLog = async (logId, user) => {
   if (!logId) {
-    throw new Error('Log ID diperlukan');
+    throw new Error('Log ID is required');
   }
   return logRepository.deleteAdherenceLog(logId, user.user_id);
 };
@@ -210,7 +226,7 @@ export const deleteAdherenceLog = async (logId, user) => {
  */
 export const updateSnapshotLog = async (snapshotId, data, user) => {
   if (!snapshotId) {
-    throw new Error('Snapshot ID diperlukan');
+    throw new Error('Snapshot ID is required');
   }
   return logRepository.updateSnapshotLog(snapshotId, data, user.user_id);
 };
@@ -223,7 +239,7 @@ export const updateSnapshotLog = async (snapshotId, data, user) => {
  */
 export const deleteSnapshotLog = async (snapshotId, user) => {
   if (!snapshotId) {
-    throw new Error('Snapshot ID diperlukan');
+    throw new Error('Snapshot ID is required');
   }
   return logRepository.deleteSnapshotLog(snapshotId, user.user_id);
 };
