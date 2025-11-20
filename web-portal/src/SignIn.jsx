@@ -23,12 +23,27 @@ export default function SignIn({ onClose, onSuccess }){
       
       console.log('Login response:', response);
       
-      if (response.success) {
-        saveAuth(response.data.token, response.data.user)
+      if (response && response.success && response.data) {
+        const token = response.data.token;
+        const user = response.data.user;
+        
+        // Validate token exists
+        if (!token) {
+          console.error('Token missing in response:', response);
+          setError('No token received from server');
+          setLoading(false);
+          return;
+        }
+        
+        // Save auth data
+        saveAuth(token, user);
+        console.log('Auth saved successfully, token:', token);
+        
         setLoading(false)
-        onSuccess && onSuccess(response.data.user, response.data.token)
+        onSuccess && onSuccess(user, token)
       } else {
-        setError(response.message || 'Login failed')
+        const errorMsg = response?.message || 'Login failed';
+        setError(errorMsg);
         setLoading(false)
       }
     } catch(e) {

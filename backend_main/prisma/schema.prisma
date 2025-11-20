@@ -161,7 +161,7 @@ model patient_profiles {
   date_of_birth   DateTime  @db.Date
   gender          gender_enum?
   medical_history String?
-  unique_code     String    @unique @db.VarChar(10) // Kunci untuk alur Model B
+  unique_code     String    @unique @db.VarChar(20) // Format: PASIEN-XXXXXX
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
 

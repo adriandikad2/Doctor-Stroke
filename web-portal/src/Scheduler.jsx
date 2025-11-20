@@ -16,21 +16,39 @@ export default function Scheduler({ user }){
     const fetchData = async () => {
       try {
         // Fetch patients
-        const patientsResp = await patientAPI.getMyPatients()
-        if (patientsResp.success && patientsResp.data) {
-          setPatients(patientsResp.data)
+        try {
+          const patientsResp = await patientAPI.getMyPatients()
+          if (patientsResp.success) {
+            const patientsList = Array.isArray(patientsResp.data) ? patientsResp.data : []
+            setPatients(patientsList)
+          }
+        } catch (err) {
+          console.error('Error fetching patients:', err)
+          setPatients([])
         }
 
         // Fetch my slots
-        const slotsResp = await appointmentAPI.getMySlots()
-        if (slotsResp.success && slotsResp.data) {
-          setMySlots(slotsResp.data)
+        try {
+          const slotsResp = await appointmentAPI.getMySlots()
+          if (slotsResp.success) {
+            const slotsList = Array.isArray(slotsResp.data) ? slotsResp.data : []
+            setMySlots(slotsList)
+          }
+        } catch (err) {
+          console.error('Error fetching slots:', err)
+          setMySlots([])
         }
 
         // Fetch appointments
-        const appointsResp = await appointmentAPI.getMyAppointments()
-        if (appointsResp.success && appointsResp.data) {
-          setAppointments(appointsResp.data)
+        try {
+          const appointsResp = await appointmentAPI.getMyAppointments()
+          if (appointsResp.success) {
+            const appointmentsList = Array.isArray(appointsResp.data) ? appointsResp.data : []
+            setAppointments(appointmentsList)
+          }
+        } catch (err) {
+          console.error('Error fetching appointments:', err)
+          setAppointments([])
         }
       } catch (err) {
         setError('Failed to load scheduler data')

@@ -198,15 +198,19 @@ export default function Progress() {
       setLoading(true);
       const response = await patientAPI.getMyPatients();
       if (response.success) {
-        setPatients(response.data);
-        if (response.data.length > 0) {
-          setSelectedPatient(response.data[0]);
+        const patientsList = Array.isArray(response.data) ? response.data : [];
+        setPatients(patientsList);
+        if (patientsList.length > 0) {
+          setSelectedPatient(patientsList[0]);
         }
       } else {
         setError(response.message || 'Failed to fetch patients');
+        setPatients([]);
       }
     } catch (err) {
-      setError(err.message || 'An error occurred');
+      console.error('Error fetching patients:', err);
+      setError(err.message || 'An error occurred while loading patients');
+      setPatients([]);
     } finally {
       setLoading(false);
     }
@@ -226,24 +230,46 @@ export default function Progress() {
       setError('');
 
       // Fetch adherence logs (for medication adherence chart)
-      const adherenceResponse = await logAPI.adherence.getByPatientId(selectedPatient.patient_id);
-      if (adherenceResponse.success) {
-        const grouped = groupAdherenceByMonth(adherenceResponse.data);
-        setAdherenceData(grouped);
+      try {
+        const adherenceResponse = await logAPI.adherence.getByPatientId(selectedPatient.patient_id);
+        if (adherenceResponse.success && adherenceResponse.data) {
+          const grouped = groupAdherenceByMonth(adherenceResponse.data);
+          setAdherenceData(grouped);
+        } else {
+          setAdherenceData([]);
+        }
+      } catch (err) {
+        console.error('Error fetching adherence data:', err);
+        setAdherenceData([]);
       }
 
       // Fetch progress logs
-      const progressResponse = await logAPI.progress.getByPatientId(selectedPatient.patient_id);
-      if (progressResponse.success) {
-        setProgressLogs(progressResponse.data);
+      try {
+        const progressResponse = await logAPI.progress.getByPatientId(selectedPatient.patient_id);
+        if (progressResponse.success && progressResponse.data) {
+          setProgressLogs(progressResponse.data);
+        } else {
+          setProgressLogs([]);
+        }
+      } catch (err) {
+        console.error('Error fetching progress logs:', err);
+        setProgressLogs([]);
       }
 
       // Fetch progress snapshots
-      const snapshotResponse = await logAPI.snapshot.getByPatientId(selectedPatient.patient_id);
-      if (snapshotResponse.success) {
-        setSnapshotData(snapshotResponse.data);
+      try {
+        const snapshotResponse = await logAPI.snapshot.getByPatientId(selectedPatient.patient_id);
+        if (snapshotResponse.success && snapshotResponse.data) {
+          setSnapshotData(snapshotResponse.data);
+        } else {
+          setSnapshotData([]);
+        }
+      } catch (err) {
+        console.error('Error fetching snapshot data:', err);
+        setSnapshotData([]);
       }
     } catch (err) {
+      console.error('Progress data error:', err);
       setError(err.message || 'Failed to fetch progress data');
     } finally {
       setLoading(false);

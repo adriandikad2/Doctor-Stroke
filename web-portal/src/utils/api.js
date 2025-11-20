@@ -38,9 +38,11 @@ const getAuthHeader = () => {
  */
 const apiRequest = async (endpoint, method = 'GET', data = null, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
+  const headers = getAuthHeader();
+  
   const config = {
     method,
-    headers: getAuthHeader(),
+    headers,
     ...options,
   };
 
@@ -50,6 +52,8 @@ const apiRequest = async (endpoint, method = 'GET', data = null, options = {}) =
 
   try {
     console.log(`[API] ${method} ${url}`, data ? data : '');
+    console.log(`[API Headers]`, headers);
+    
     const response = await fetch(url, config);
 
     // Handle non-JSON responses
@@ -67,20 +71,27 @@ const apiRequest = async (endpoint, method = 'GET', data = null, options = {}) =
 
     // Handle error responses
     if (!response.ok) {
-      const errorMessage = responseData?.message || responseData?.error || 'API request failed';
+      const errorMessage = responseData?.message || responseData?.error || `HTTP ${response.status}: API request failed`;
       console.error(`[API Error] ${response.status} - ${errorMessage}`);
+      
+      // Handle 401/403 - Clear auth and redirect
+      if (response.status === 401 || response.status === 403) {
+        clearAuth();
+        window.location.href = '/';
+      }
+      
       throw {
+        success: false,
         status: response.status,
         message: errorMessage,
         data: responseData,
       };
     }
 
-    return {
-      success: true,
-      data: responseData,
-      status: response.status
-    };
+    // If response is JSON from backend, return it directly (don't double-wrap)
+    // Backend returns: { success: true/false, message, data }
+    // We should return that as-is, not wrap it again
+    return responseData;
   } catch (error) {
     console.error(`[API Catch Error] ${method} ${endpoint}:`, error);
     
@@ -94,11 +105,8 @@ const apiRequest = async (endpoint, method = 'GET', data = null, options = {}) =
     }
     
     // API error
-    if (error.status) {
-      throw {
-        success: false,
-        ...error
-      };
+    if (error.status || error.success === false) {
+      throw error;
     }
     
     throw {

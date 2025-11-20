@@ -15,24 +15,47 @@ export default function Dashboard({ user }) {
         setError('');
 
         // Fetch patients linked to current doctor/therapist
-        const patientsResponse = await patientAPI.getMyPatients();
-        if (patientsResponse.success && patientsResponse.data) {
-          setPatients(patientsResponse.data);
+        try {
+          const patientsResponse = await patientAPI.getMyPatients();
+          console.log('Patients response:', patientsResponse);
           
-          // Set first patient as selected by default
-          if (patientsResponse.data.length > 0) {
-            setSelectedPatient(patientsResponse.data[0]);
+          if (patientsResponse.success) {
+            const patientsList = Array.isArray(patientsResponse.data) ? patientsResponse.data : [];
+            setPatients(patientsList);
+            
+            // Set first patient as selected by default
+            if (patientsList.length > 0) {
+              setSelectedPatient(patientsList[0]);
+            }
+          } else {
+            console.warn('Patients response not successful:', patientsResponse);
+            setPatients([]);
           }
+        } catch (err) {
+          console.error('Error fetching patients:', err);
+          setError(err.message || 'Failed to load patients');
+          setPatients([]);
         }
 
-        // Fetch appointments
-        const appointmentsResponse = await appointmentAPI.getMyAppointments();
-        if (appointmentsResponse.success && appointmentsResponse.data) {
-          setAppointments(appointmentsResponse.data);
+        // Fetch appointments (non-blocking)
+        try {
+          const appointmentsResponse = await appointmentAPI.getMyAppointments();
+          console.log('Appointments response:', appointmentsResponse);
+          
+          if (appointmentsResponse.success) {
+            const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+            setAppointments(appointmentsList);
+          } else {
+            setAppointments([]);
+          }
+        } catch (err) {
+          console.error('Error fetching appointments:', err);
+          // Don't set error for appointments - it's non-critical
+          setAppointments([]);
         }
       } catch (err) {
-        setError('Failed to load dashboard data');
         console.error('Dashboard error:', err);
+        setError('Failed to load dashboard data. Please refresh the page.');
       } finally {
         setLoading(false);
       }

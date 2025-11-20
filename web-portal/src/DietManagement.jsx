@@ -34,15 +34,20 @@ export default function DietManagement({ user }) {
         setLoading(true);
         setError('');
         const response = await patientAPI.getMyPatients();
-        if (response.success && response.data) {
-          setPatients(response.data);
-          if (response.data.length > 0) {
-            setSelectedPatient(response.data[0]);
+        if (response.success) {
+          const patientsList = Array.isArray(response.data) ? response.data : [];
+          setPatients(patientsList);
+          if (patientsList.length > 0) {
+            setSelectedPatient(patientsList[0]);
           }
+        } else {
+          setError(response.message || 'Failed to load patients');
+          setPatients([]);
         }
       } catch (err) {
-        setError('Failed to load patients');
-        console.error(err);
+        console.error('Error fetching patients:', err);
+        setError(err.message || 'Failed to load patients');
+        setPatients([]);
       } finally {
         setLoading(false);
       }

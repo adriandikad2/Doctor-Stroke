@@ -1,4 +1,3 @@
-import { randomBytes } from 'crypto';
 import prisma from '../config/db.js';
 import * as patientRepository from '../repositories/patient.repository.js';
 
@@ -15,8 +14,34 @@ export const createNewPatient = async (patientData, user) => {
     throw new Error('Only family members can create patient profiles');
   }
 
-  // Generate unique 6-character code
-  const unique_code = randomBytes(3).toString('hex').toUpperCase();
+  // Generate unique code in format PASIEN-XXXXXX (6 alphanumeric characters)
+  const generateUniqueCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `PASIEN-${code}`;
+  };
+
+  // Generate unique code and ensure it's unique
+  let unique_code = generateUniqueCode();
+  let isUnique = false;
+  let attempts = 0;
+  
+  while (!isUnique && attempts < 10) {
+    const existing = await patientRepository.findPatientByCode(unique_code);
+    if (!existing) {
+      isUnique = true;
+    } else {
+      unique_code = generateUniqueCode();
+      attempts++;
+    }
+  }
+
+  if (!isUnique) {
+    throw new Error('Failed to generate unique patient code');
+  }
 
   // Execute transaction: create patient and auto-link family user
   const newPatient = await prisma.$transaction(async (tx) => {
