@@ -15,7 +15,9 @@
       </div>
       <div class="nav-menu">
         <button class="nav-link active" data-page="home">🏠 Home</button>
+        <button class="nav-link" data-page="patients">👥 Patients</button>
         <button class="nav-link" data-page="diet">🥗 Diet</button>
+        <button class="nav-link" data-page="medications">💊 Medications</button>
         <button class="nav-link" data-page="progress">📊 Progress</button>
       </div>
     </nav>
@@ -73,7 +75,7 @@
       <div id="diet-page" class="page">
         <div class="card">
           <h1>🥗 Diet Management</h1>
-          <p class="lead">View nutrition profile and meal plans for your patients</p>
+          <p class="lead">View nutrition profile and meal logs for your patients</p>
           
           <div id="diet-loading" class="loading" style="display: none;">
             <div class="spinner"></div>
@@ -98,11 +100,6 @@
               <div id="nutrition-profile" class="info-grid"></div>
             </div>
 
-            <!-- Meal Plan -->
-            <div class="diet-section">
-              <h3>📅 Meal Plan (Next 7 Days)</h3>
-              <div id="meal-plan" class="meal-plan-grid"></div>
-            </div>
 
             <!-- Recent Meals -->
             <div class="diet-section">
@@ -117,11 +114,108 @@
         </div>
       </div>
 
-      <!-- Progress Page (Placeholder) -->
+      <!-- Patients Page -->
+      <div id="patients-page" class="page">
+        <div class="card">
+          <h1>👥 My Patients</h1>
+          <p class="lead">View and manage patients in your care</p>
+          
+          <div id="patients-loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading patients...</p>
+          </div>
+
+          <div id="patients-error" class="error-msg" style="display: none;"></div>
+
+          <div id="patients-list" class="patients-grid"></div>
+          
+          <div id="patients-empty" style="display: none; text-align: center; padding: 40px 20px; color: #888;">
+            <p>👉 No patients found. Ask your doctor to add you to a patient's care team.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medications Page -->
+      <div id="medications-page" class="page">
+        <div class="card">
+          <h1>💊 Medication Tracking</h1>
+          <p class="lead">View prescriptions and track medication adherence</p>
+          
+          <div id="medications-loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading medications...</p>
+          </div>
+
+          <div id="medications-error" class="error-msg" style="display: none;"></div>
+
+          <!-- Patient Selector for Medications -->
+          <div id="medications-patient-selector" style="display: none;">
+            <label for="medications-patient-select">Select Patient</label>
+            <select id="medications-patient-select" class="select">
+              <option value="">-- Choose Patient --</option>
+            </select>
+          </div>
+
+          <!-- Medications Content -->
+          <div id="medications-content" style="display: none;">
+            <!-- Prescriptions -->
+            <div class="medications-section">
+              <h3>📋 Current Prescriptions</h3>
+              <div id="prescriptions-list" class="prescriptions-grid"></div>
+            </div>
+
+            <!-- Adherence Tracking -->
+            <div class="medications-section">
+              <h3>✅ Medication Adherence</h3>
+              <div id="adherence-list" class="adherence-grid"></div>
+            </div>
+          </div>
+
+          <div id="medications-empty" style="display: none; text-align: center; padding: 40px 20px; color: #888;">
+            <p>👉 Please select a patient to view their medications.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Page -->
       <div id="progress-page" class="page">
         <div class="card">
           <h1>📊 Progress Tracking</h1>
-          <p class="lead">Coming soon: View patient recovery progress and health metrics</p>
+          <p class="lead">View patient recovery progress and health metrics</p>
+          
+          <div id="progress-loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading progress data...</p>
+          </div>
+
+          <div id="progress-error" class="error-msg" style="display: none;"></div>
+
+          <!-- Patient Selector for Progress -->
+          <div id="progress-patient-selector" style="display: none;">
+            <label for="progress-patient-select">Select Patient</label>
+            <select id="progress-patient-select" class="select">
+              <option value="">-- Choose Patient --</option>
+            </select>
+          </div>
+
+          <!-- Progress Content -->
+          <div id="progress-content" style="display: none;">
+            <!-- Progress Snapshots -->
+            <div class="progress-section">
+              <h3>📈 Progress Snapshots</h3>
+              <div id="snapshots-list" class="snapshots-grid"></div>
+            </div>
+
+            <!-- Progress Logs -->
+            <div class="progress-section">
+              <h3>📝 Progress Notes</h3>
+              <div id="progress-logs-list" class="progress-logs-grid"></div>
+            </div>
+          </div>
+
+          <div id="progress-empty" style="display: none; text-align: center; padding: 40px 20px; color: #888;">
+            <p>👉 Please select a patient to view their progress.</p>
+          </div>
         </div>
       </div>
     </main>

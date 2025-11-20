@@ -16,7 +16,7 @@ app.post('/api/auth/register', async (req, res) => {
     const target = `${BACKEND.replace(/\/$/, '')}/api/auth/register`;
     const payload = {
       ...req.body,
-      role: req.body.role || 'caregiver'
+      role: req.body.role || 'family'
     };
     
     console.log(`📤 Proxying signup to: ${target}`);

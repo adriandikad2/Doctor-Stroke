@@ -431,9 +431,206 @@ select:focus {
     flex-direction: column;
     gap: 4px;
   }
-  
   .meal-header {
     flex-direction: column;
     gap: 4px;
   }
+}
+
+/* Patients Grid */
+.patients-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+ gap: 16px;
+ margin-top: 16px;
+}
+
+.patient-card {
+ background: var(--bg);
+ padding: 16px;
+ border-radius: 10px;
+ border: 1px solid var(--border);
+ transition: all 0.3s ease;
+}
+
+.patient-card:hover {
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+ transform: translateY(-2px);
+}
+
+.patient-card h3 {
+ color: var(--primary);
+ margin-bottom: 8px;
+ font-size: 18px;
+}
+
+.patient-actions {
+ margin-top: 12px;
+ text-align: right;
+}
+
+/* Medications Section */
+.medications-section {
+ margin-bottom: 32px;
+}
+
+.medications-section h3 {
+ font-size: 18px;
+ color: var(--primary);
+ margin-bottom: 16px;
+ font-weight: 700;
+ display: flex;
+ align-items: center;
+ gap: 8px;
+}
+
+.prescriptions-grid {
+ display: grid;
+ gap: 16px;
+}
+
+.prescription-card {
+ background: var(--bg);
+ padding: 16px;
+ border-radius: 10px;
+ border-left: 4px solid var(--blue);
+}
+
+.prescription-card h4 {
+ color: var(--primary);
+ margin-bottom: 8px;
+}
+
+.adherence-grid {
+ display: grid;
+ gap: 12px;
+}
+
+.adherence-card {
+ background: var(--bg);
+ padding: 14px;
+ border-radius: 10px;
+ border-left: 4px solid var(--teal);
+ transition: all 0.3s ease;
+}
+
+.adherence-card:hover {
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+ transform: translateX(4px);
+}
+
+.adherence-header {
+ display: flex;
+ justify-content: space-between;
+ margin-bottom: 8px;
+}
+
+.adherence-status {
+ font-weight: 700;
+ font-size: 14px;
+}
+
+.adherence-status.taken {
+ color: #065f46;
+}
+
+.adherence-status.missed {
+ color: #dc2626;
+}
+
+.adherence-status.delayed {
+ color: #d97706;
+}
+
+.adherence-date {
+ font-size: 12px;
+ color: var(--muted);
+}
+
+/* Progress Section */
+.progress-section {
+ margin-bottom: 32px;
+}
+
+.progress-section h3 {
+ font-size: 18px;
+ color: var(--primary);
+ margin-bottom: 16px;
+ font-weight: 700;
+ display: flex;
+ align-items: center;
+ gap: 8px;
+}
+
+.snapshots-grid {
+ display: grid;
+ gap: 16px;
+}
+
+.snapshot-card {
+ background: var(--bg);
+ padding: 16px;
+ border-radius: 10px;
+ border-left: 4px solid var(--green);
+}
+
+.snapshot-header {
+ display: flex;
+ justify-content: space-between;
+ margin-bottom: 12px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid var(--border);
+}
+
+.snapshot-date {
+ font-weight: 700;
+ color: var(--text);
+}
+
+.snapshot-mood {
+ font-weight: 600;
+ color: var(--primary);
+}
+
+.snapshot-metrics {
+ display: grid;
+ gap: 8px;
+}
+
+.snapshot-metrics p {
+ font-size: 14px;
+ margin: 0;
+}
+
+.progress-logs-grid {
+ display: grid;
+ gap: 16px;
+}
+
+.progress-log-card {
+ background: var(--bg);
+ padding: 16px;
+ border-radius: 10px;
+ border-left: 4px solid var(--teal);
+}
+
+.progress-log-header {
+ display: flex;
+ justify-content: space-between;
+ margin-bottom: 8px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid var(--border);
+}
+
+.progress-log-date {
+ font-weight: 700;
+ color: var(--text);
+}
+
+.progress-log-author {
+ font-size: 12px;
+ color: var(--muted);
+ background: var(--bg);
+ padding: 2px 8px;
+ border-radius: 12px;
 }
