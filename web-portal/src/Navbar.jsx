@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from './ThemeContext';
 
-export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) {
+export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignOut, onLinkPatient }) {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -211,6 +211,13 @@ export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) 
               onClick={() => { onNavigate('dashboard'); setMobileMenuOpen(false); }}
             >
               📊 Dashboard
+            </button>
+            <button 
+              className="btn-ghost" 
+              onClick={() => { onLinkPatient && onLinkPatient(); setMobileMenuOpen(false); }}
+              title="Link a patient using unique code"
+            >
+              🔗 Link Patient
             </button>
             <button 
               className="btn-ghost" 

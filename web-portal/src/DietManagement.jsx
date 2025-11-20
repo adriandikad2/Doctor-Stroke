@@ -1,158 +1,173 @@
 import React, { useState, useEffect } from 'react';
+import { patientAPI, nutritionAPI, logAPI } from './utils/api';
 
-// Fungsi helper untuk melakukan fetch dengan otentikasi
-async function authedFetch(url, options = {}) {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
-
-  const headers = new Headers(options.headers || {});
-  headers.append('Authorization', `Bearer ${token}`);
-  headers.append('Content-Type', 'application/json');
-
-  const res = await fetch(url, { ...options, headers });
-  
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'API request failed');
-  }
-  return res.json();
-}
-
-export default function DietManagement() {
+export default function DietManagement({ user }) {
   const [patients, setPatients] = useState([]);
-  const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState(null);
   
   const [profile, setProfile] = useState(null);
-  const [plan, setPlan] = useState(null);
   const [meals, setMeals] = useState([]);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // State untuk form
-  const [formData, setFormData] = useState({
-    calories: '',
-    sodium_mg: '',
-    fiber_g: ''
+  // State untuk form update nutrition profile
+  const [profileForm, setProfileForm] = useState({
+    sodium_limit_mg: '',
+    fiber_target_g: '',
+    calorie_target_max: ''
   });
   
-  const [mealFormData, setMealFormData] = useState({
-    meal_type: 'snack',
-    foods: '',
+  // State untuk form log meal
+  const [mealForm, setMealForm] = useState({
+    meal_type: 'breakfast',
+    foods_consumed: '',
     calories: '',
     sodium_mg: '',
     fiber_g: ''
   });
 
-  // 1. Ambil daftar pasien saat komponen dimuat
+  // 1. Fetch patients saat komponen mount
   useEffect(() => {
-    async function fetchPatients() {
-      setLoading(true);
-      setError('');
+    const fetchPatients = async () => {
       try {
-        const data = await authedFetch('/api/patients');
-        setPatients(data.patients || []);
+        setLoading(true);
+        setError('');
+        const response = await patientAPI.getMyPatients();
+        if (response.success && response.data) {
+          setPatients(response.data);
+          if (response.data.length > 0) {
+            setSelectedPatient(response.data[0]);
+          }
+        }
       } catch (err) {
-        setError(err.message);
+        setError('Failed to load patients');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
+    };
+
     fetchPatients();
   }, []);
 
-  // 2. Ambil data nutrisi saat pasien dipilih
+  // 2. Fetch nutrition data saat patient dipilih
   useEffect(() => {
-    if (!selectedPatientId) {
+    if (!selectedPatient?.patient_id) {
       setProfile(null);
-      setPlan(null);
       setMeals([]);
       return;
     }
 
-    async function fetchDataForPatient() {
-      setLoading(true);
-      setError('');
+    const fetchNutritionData = async () => {
       try {
-        const [profileData, planData, mealsData] = await Promise.all([
-          authedFetch(`/api/nutrition/patient/${selectedPatientId}/profile`),
-          authedFetch(`/api/nutrition/patient/${selectedPatientId}/plan?days=3`),
-          authedFetch(`/api/nutrition/patient/${selectedPatientId}/meals`)
-        ]);
-        
-        setProfile(profileData.profile);
-        setPlan(planData);
-        setMeals(mealsData.meals || []);
-        
-        if (profileData.profile) {
-          setFormData({
-            calories: profileData.profile.calorie_target_max || 1800,
-            sodium_mg: profileData.profile.sodium_limit_mg || 1500,
-            fiber_g: profileData.profile.fiber_target_g || 25
+        setLoading(true);
+        setError('');
+
+        // Fetch nutrition profile
+        const profileResp = await nutritionAPI.getProfile(selectedPatient.patient_id);
+        if (profileResp.success && profileResp.data) {
+          setProfile(profileResp.data);
+          setProfileForm({
+            sodium_limit_mg: profileResp.data.sodium_limit_mg || '',
+            fiber_target_g: profileResp.data.fiber_target_g || '',
+            calorie_target_max: profileResp.data.calorie_target_max || ''
           });
         }
+
+        // Fetch meal logs
+        const mealsResp = await logAPI.meal.getByPatientId(selectedPatient.patient_id);
+        if (mealsResp.success && mealsResp.data) {
+          setMeals(mealsResp.data);
+        }
       } catch (err) {
-        setError(err.message);
+        setError('Failed to load nutrition data');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
-    fetchDataForPatient();
-  }, [selectedPatientId]);
+    };
+
+    fetchNutritionData();
+  }, [selectedPatient]);
   
-  // Handler untuk update profil
+  // Handler untuk update profil nutrisi
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    
+    if (!selectedPatient?.patient_id) {
+      setError('Please select a patient');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
     try {
-      const payload = {
-        calorie_target_max: parseInt(formData.calories, 10),
-        sodium_limit_mg: parseInt(formData.sodium_mg, 10),
-        fiber_target_g: parseInt(formData.fiber_g, 10)
-      };
-      const data = await authedFetch(`/api/nutrition/patient/${selectedPatientId}/profile`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
+      const response = await nutritionAPI.updateProfile(selectedPatient.patient_id, {
+        calorie_target_max: parseInt(profileForm.calorie_target_max || 0, 10),
+        sodium_limit_mg: parseInt(profileForm.sodium_limit_mg || 0, 10),
+        fiber_target_g: parseInt(profileForm.fiber_target_g || 0, 10)
       });
-      setProfile(data.profile);
-      alert('Profil berhasil diperbarui!');
+
+      if (response.success) {
+        setProfile(response.data);
+        alert('Nutrition profile updated successfully!');
+      } else {
+        setError(response.message || 'Failed to update profile');
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
   
-  // Handler untuk mencatat makanan
+  // Handler untuk log meal
   const handleLogMeal = async (e) => {
     e.preventDefault();
+    
+    if (!selectedPatient?.patient_id) {
+      setError('Please select a patient');
+      return;
+    }
+
+    if (!mealForm.foods_consumed) {
+      setError('Please enter foods consumed');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
     try {
-      const payload = {
-        meal_type: mealFormData.meal_type,
-        foods: mealFormData.foods.split(',').map(f => f.trim()),
-        calories: parseInt(mealFormData.calories, 10) || 0,
-        sodium_mg: parseInt(mealFormData.sodium_mg, 10) || 0,
-        fiber_g: parseInt(mealFormData.fiber_g, 10) || 0,
-      };
-      const data = await authedFetch(`/api/nutrition/patient/${selectedPatientId}/meals`, {
-        method: 'POST',
-        body: JSON.stringify(payload)
+      const response = await logAPI.meal.create({
+        patient_id: selectedPatient.patient_id,
+        meal_type: mealForm.meal_type,
+        foods_consumed: mealForm.foods_consumed,
+        calories: parseInt(mealForm.calories || 0, 10),
+        sodium_mg: parseInt(mealForm.sodium_mg || 0, 10),
+        fiber_g: parseInt(mealForm.fiber_g || 0, 10)
       });
-      
-      alert(`Makanan dicatat! Feedback: ${data.feedback.notes.join(' ') || 'OK'}`);
-      setMeals([data.meal, ...meals]);
-      setMealFormData({ meal_type: 'snack', foods: '', calories: '', sodium_mg: '', fiber_g: '' });
-      
+
+      if (response.success) {
+        alert('Meal logged successfully!');
+        setMeals([response.data, ...meals]);
+        setMealForm({
+          meal_type: 'breakfast',
+          foods_consumed: '',
+          calories: '',
+          sodium_mg: '',
+          fiber_g: ''
+        });
+      } else {
+        setError(response.message || 'Failed to log meal');
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
-  
-  const handleFormChange = (e, formSetter) => {
-    formSetter(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -398,8 +413,11 @@ export default function DietManagement() {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <select 
             id="patient-select" 
-            value={selectedPatientId} 
-            onChange={(e) => setSelectedPatientId(e.target.value)}
+            value={selectedPatient?.patient_id || ''} 
+            onChange={(e) => {
+              const patient = patients.find(p => p.patient_id === e.target.value);
+              setSelectedPatient(patient || null);
+            }}
             style={{ marginBottom: 0 }}
           >
             <option value="">-- Pilih Pasien --</option>
@@ -411,13 +429,13 @@ export default function DietManagement() {
         </div>
       </div>
 
-      {!selectedPatientId && !loading && (
+      {!selectedPatient && !loading && (
         <div className="empty-state">
           <p style={{ fontSize: '14px' }}>👉 Silakan pilih pasien untuk melihat data nutrisi dan rencana diet.</p>
         </div>
       )}
 
-      {selectedPatientId && !loading && (
+      {selectedPatient && !loading && (
         <div className="diet-grid">
           
           {/* Left Panel: Forms */}
@@ -429,9 +447,9 @@ export default function DietManagement() {
                   <label>Batas Sodium (mg)</label>
                   <input 
                     type="number" 
-                    name="sodium_mg"
-                    value={formData.sodium_mg} 
-                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    name="sodium_limit_mg"
+                    value={profileForm.sodium_limit_mg} 
+                    onChange={(e) => setProfileForm({...profileForm, sodium_limit_mg: e.target.value})} 
                     placeholder="mis: 1500"
                   />
                 </div>
@@ -439,9 +457,9 @@ export default function DietManagement() {
                   <label>Target Serat (g)</label>
                   <input 
                     type="number" 
-                    name="fiber_g"
-                    value={formData.fiber_g} 
-                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    name="fiber_target_g"
+                    value={profileForm.fiber_target_g} 
+                    onChange={(e) => setProfileForm({...profileForm, fiber_target_g: e.target.value})} 
                     placeholder="mis: 25"
                   />
                 </div>
@@ -449,9 +467,9 @@ export default function DietManagement() {
                   <label>Target Kalori (Maksimal)</label>
                   <input 
                     type="number" 
-                    name="calories"
-                    value={formData.calories} 
-                    onChange={(e) => handleFormChange(e, setFormData)} 
+                    name="calorie_target_max"
+                    value={profileForm.calorie_target_max} 
+                    onChange={(e) => setProfileForm({...profileForm, calorie_target_max: e.target.value})} 
                     placeholder="mis: 1800"
                   />
                 </div>
@@ -466,7 +484,11 @@ export default function DietManagement() {
               <form onSubmit={handleLogMeal}>
                 <div>
                   <label>Jenis Makanan</label>
-                  <select name="meal_type" value={mealFormData.meal_type} onChange={(e) => handleFormChange(e, setMealFormData)}>
+                  <select 
+                    name="meal_type" 
+                    value={mealForm.meal_type} 
+                    onChange={(e) => setMealForm({...mealForm, meal_type: e.target.value})}
+                  >
                     <option value="breakfast">🌅 Sarapan</option>
                     <option value="lunch">☀️ Makan Siang</option>
                     <option value="dinner">🌙 Makan Malam</option>
@@ -475,19 +497,42 @@ export default function DietManagement() {
                 </div>
                 <div>
                   <label>Makanan (pisahkan dengan koma)</label>
-                  <input name="foods" value={mealFormData.foods} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: oatmeal, apel, susu" />
+                  <input 
+                    name="foods_consumed" 
+                    value={mealForm.foods_consumed} 
+                    onChange={(e) => setMealForm({...mealForm, foods_consumed: e.target.value})} 
+                    placeholder="mis: oatmeal, apel, susu" 
+                  />
                 </div>
                 <div>
                   <label>Kalori (kkal)</label>
-                  <input name="calories" value={mealFormData.calories} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 350" type="number" />
+                  <input 
+                    name="calories" 
+                    value={mealForm.calories} 
+                    onChange={(e) => setMealForm({...mealForm, calories: e.target.value})} 
+                    placeholder="mis: 350" 
+                    type="number" 
+                  />
                 </div>
                 <div>
                   <label>Sodium (mg)</label>
-                  <input name="sodium_mg" value={mealFormData.sodium_mg} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 200" type="number" />
+                  <input 
+                    name="sodium_mg" 
+                    value={mealForm.sodium_mg} 
+                    onChange={(e) => setMealForm({...mealForm, sodium_mg: e.target.value})} 
+                    placeholder="mis: 200" 
+                    type="number" 
+                  />
                 </div>
                 <div>
                   <label>Serat (g)</label>
-                  <input name="fiber_g" value={mealFormData.fiber_g} onChange={(e) => handleFormChange(e, setMealFormData)} placeholder="mis: 5" type="number" />
+                  <input 
+                    name="fiber_g" 
+                    value={mealForm.fiber_g} 
+                    onChange={(e) => setMealForm({...mealForm, fiber_g: e.target.value})} 
+                    placeholder="mis: 5" 
+                    type="number" 
+                  />
                 </div>
                 <button type="submit" style={{ background: 'var(--green)', color: 'white' }}>
                   ✏️ Catat Makanan
@@ -499,21 +544,17 @@ export default function DietManagement() {
           {/* Right Panel: Data & Plans */}
           <div>
             <div className="form-card">
-              <h4>📅 Rencana Makan (3 Hari)</h4>
-              {plan && plan.plan && plan.plan.length > 0 ? (
+              <h4>📅 Data Profil Nutrisi</h4>
+              {profile ? (
                 <div style={{ fontSize: '13px' }}>
-                  {plan.plan.map((day, idx) => (
-                    <div key={day.day} style={{ marginBottom: '12px' }} className="meal-item">
-                      <strong style={{ display: 'block', marginBottom: '6px', color: 'var(--primary)' }}>{day.day}</strong>
-                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🌅 Sarapan: {day.meals.breakfast.title}</p>
-                      <p style={{ margin: '2px 0', fontSize: '11px' }}>☀️ Siang: {day.meals.lunch.title}</p>
-                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🌙 Malam: {day.meals.dinner.title}</p>
-                      <p style={{ margin: '2px 0', fontSize: '11px' }}>🍪 Camilan: {day.meals.snack.title}</p>
-                    </div>
-                  ))}
+                  <div className="meal-item">
+                    <p className="meal-time">Batas Sodium: <strong>{profile.sodium_limit_mg || '-'} mg</strong></p>
+                    <p className="meal-time">Target Serat: <strong>{profile.fiber_target_g || '-'} g</strong></p>
+                    <p className="meal-time">Target Kalori: <strong>{profile.calorie_target_max || '-'} kkal</strong></p>
+                  </div>
                 </div>
               ) : (
-                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>Belum ada rencana makan</p>
+                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>Belum ada profil nutrisi</p>
               )}
             </div>
 
@@ -521,17 +562,14 @@ export default function DietManagement() {
               <h4>📝 Riwayat Makanan Tercatat</h4>
               <div className="meal-list">
                 {meals.length > 0 ? meals.map((meal, idx) => (
-                  <div key={meal.meal_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
-                    <p className="meal-time">{meal.logged_for}: {meal.meal_type}</p>
-                    <p className="meal-foods">🍽️ {meal.foods.join(', ')}</p>
+                  <div key={meal.meal_log_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
+                    <p className="meal-time">{new Date(meal.logged_date || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
+                    <p className="meal-foods">🍽️ {meal.foods_consumed}</p>
                     <div className="meal-nutrition">
-                      <span>⚡ {meal.calories} kkal</span>
-                      <span>🧂 {meal.sodium_mg}mg Na</span>
-                      <span>🌾 {meal.fiber_g}g Serat</span>
+                      <span>⚡ {meal.calories || 0} kkal</span>
+                      <span>🧂 {meal.sodium_mg || 0}mg Na</span>
+                      <span>🌾 {meal.fiber_g || 0}g Serat</span>
                     </div>
-                    {meal.feedback && meal.feedback.status === 'warning' && (
-                      <p className="meal-feedback">⚠️ {meal.feedback.notes.join(', ')}</p>
-                    )}
                   </div>
                 )) : (
                   <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px', padding: '20px 0' }}>

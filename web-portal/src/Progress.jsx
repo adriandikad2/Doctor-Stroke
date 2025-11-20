@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { patientAPI, logAPI } from './utils/api';
 
 const COLORS = {
   primary: '#8385CC',
@@ -8,38 +9,6 @@ const COLORS = {
   lavender: '#B199C7',
   soft: '#E0BEE6'
 };
-
-// Mock data untuk grafik
-const MOCK_ADHERENCE_DATA = [
-  { month: 'Jan', rate: 78 },
-  { month: 'Feb', rate: 82 },
-  { month: 'Mar', rate: 85 },
-  { month: 'Apr', rate: 88 },
-  { month: 'May', rate: 92 },
-  { month: 'Jun', rate: 95 }
-];
-
-const MOCK_THERAPY_DATA = [
-  { week: 'Week 1', completed: 4, total: 4 },
-  { week: 'Week 2', completed: 3, total: 4 },
-  { week: 'Week 3', completed: 4, total: 4 },
-  { week: 'Week 4', completed: 3, total: 4 }
-];
-
-const MOCK_RECOVERY_TIMELINE = [
-  { phase: 'Phase 1', duration: 'Week 1-2', status: 'completed', progress: 100 },
-  { phase: 'Phase 2', duration: 'Week 3-4', status: 'completed', progress: 100 },
-  { phase: 'Phase 3', duration: 'Week 5-8', status: 'in-progress', progress: 65 },
-  { phase: 'Phase 4', duration: 'Week 9+', status: 'pending', progress: 0 }
-];
-
-const MOCK_VITAL_SIGNS = [
-  { date: 'Day 1', bp_systolic: 145, bp_diastolic: 92 },
-  { date: 'Day 5', bp_systolic: 142, bp_diastolic: 88 },
-  { date: 'Day 10', bp_systolic: 138, bp_diastolic: 85 },
-  { date: 'Day 15', bp_systolic: 135, bp_diastolic: 82 },
-  { date: 'Day 20', bp_systolic: 132, bp_diastolic: 80 }
-];
 
 function BarChart({ data, dataKey, maxValue = 100, color = COLORS.blue }) {
   return (
@@ -211,10 +180,114 @@ function RecoveryTimeline() {
 export default function Progress() {
   const [activeTab, setActiveTab] = useState('adherence');
   const [animateCharts, setAnimateCharts] = useState(false);
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [adherenceData, setAdherenceData] = useState([]);
+  const [progressLogs, setProgressLogs] = useState([]);
+  const [snapshotData, setSnapshotData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setAnimateCharts(true);
+    fetchPatients();
   }, []);
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const response = await patientAPI.getMyPatients();
+      if (response.success) {
+        setPatients(response.data);
+        if (response.data.length > 0) {
+          setSelectedPatient(response.data[0]);
+        }
+      } else {
+        setError(response.message || 'Failed to fetch patients');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPatient) {
+      fetchProgressData();
+    }
+  }, [selectedPatient]);
+
+  const fetchProgressData = async () => {
+    if (!selectedPatient?.patient_id) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Fetch adherence logs (for medication adherence chart)
+      const adherenceResponse = await logAPI.adherence.getByPatientId(selectedPatient.patient_id);
+      if (adherenceResponse.success) {
+        const grouped = groupAdherenceByMonth(adherenceResponse.data);
+        setAdherenceData(grouped);
+      }
+
+      // Fetch progress logs
+      const progressResponse = await logAPI.progress.getByPatientId(selectedPatient.patient_id);
+      if (progressResponse.success) {
+        setProgressLogs(progressResponse.data);
+      }
+
+      // Fetch progress snapshots
+      const snapshotResponse = await logAPI.snapshot.getByPatientId(selectedPatient.patient_id);
+      if (snapshotResponse.success) {
+        setSnapshotData(snapshotResponse.data);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch progress data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Group adherence logs by month
+  const groupAdherenceByMonth = (logs) => {
+    const months = {};
+    logs.forEach(log => {
+      const date = new Date(log.logged_date || log.created_at);
+      const monthKey = date.toLocaleString('default', { month: 'short' });
+      
+      if (!months[monthKey]) {
+        months[monthKey] = { month: monthKey, total: 0, taken: 0 };
+      }
+      months[monthKey].total += 1;
+      if (log.taken === true || log.taken === 'true') {
+        months[monthKey].taken += 1;
+      }
+    });
+
+    // Convert to rate percentage
+    return Object.values(months)
+      .slice(0, 6)
+      .map(m => ({
+        ...m,
+        rate: m.total > 0 ? Math.round((m.taken / m.total) * 100) : 0
+      }));
+  };
+
+  // Calculate current adherence rate
+  const getCurrentAdherenceRate = () => {
+    if (adherenceData.length === 0) return 0;
+    const lastMonth = adherenceData[adherenceData.length - 1];
+    return lastMonth.rate || 0;
+  };
+
+  // Calculate average adherence rate
+  const getAverageAdherenceRate = () => {
+    if (adherenceData.length === 0) return 0;
+    const sum = adherenceData.reduce((acc, item) => acc + (item.rate || 0), 0);
+    return Math.round(sum / adherenceData.length);
+  };
 
   const tabs = [
     { id: 'adherence', label: '💊 Medication Adherence', icon: '💊' },
@@ -375,56 +448,119 @@ export default function Progress() {
 
       <div className="progress-container">
         <div className="progress-header">
-          <h2>📊 Your Progress</h2>
-          <p>Comprehensive overview of your recovery and treatment adherence</p>
+          <h2>📊 Progress & Recovery</h2>
+          <p>Comprehensive overview of patient recovery and treatment adherence</p>
         </div>
 
-        {/* Tabs */}
-        <div className="tabs">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
+        {error && (
+          <div style={{
+            background: '#FEE2E2',
+            color: '#DC2626',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '13px',
+            borderLeft: '4px solid #DC2626'
+          }}>
+            ❌ Error: {error}
+          </div>
+        )}
+
+        {/* Patient Selector */}
+        <div style={{
+          background: 'var(--color-card)',
+          padding: '16px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          boxShadow: '0 12px 30px rgba(14, 30, 45, 0.06)',
+          border: '1px solid var(--color-border)'
+        }}>
+          <label style={{
+            display: 'block',
+            fontWeight: 700,
+            color: 'var(--primary)',
+            marginBottom: '8px',
+            fontSize: '14px'
+          }}>🏥 Select Patient</label>
+          <select 
+            value={selectedPatient?.patient_id || ''} 
+            onChange={(e) => {
+              const patient = patients.find(p => p.patient_id === e.target.value);
+              setSelectedPatient(patient || null);
+            }}
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              padding: '10px 12px',
+              border: '1px solid var(--color-border)',
+              borderRadius: '8px',
+              background: 'var(--color-bg)',
+              color: 'var(--color-text)',
+              fontSize: '13px'
+            }}
+          >
+            <option value="">-- Select Patient --</option>
+            {patients.map(p => (
+              <option key={p.patient_id} value={p.patient_id}>{p.name}</option>
+            ))}
+          </select>
         </div>
+
+        {!selectedPatient && (
+          <div style={{
+            textAlign: 'center',
+            padding: '40px 20px',
+            color: 'var(--color-muted-2)'
+          }}>
+            <p style={{ fontSize: '14px' }}>👉 Please select a patient to view progress data.</p>
+          </div>
+        )}
+
+        {selectedPatient && !loading && (
+          <>
+          <div className="tabs">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
 
         {/* Content */}
         {activeTab === 'adherence' && (
           <>
             <div className="chart-card">
-              <h3>💊 Medication Adherence Rate (Last 6 Months)</h3>
-              <BarChart data={MOCK_ADHERENCE_DATA} dataKey="rate" maxValue={100} color={COLORS.primary} />
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <div className="stat-label">Current Rate</div>
-                  <p className="stat-value">95%</p>
-                  <div className="stat-description">⬆ +3% from last month</div>
+              <h3>💊 Medication Adherence Rate</h3>
+              {adherenceData.length > 0 ? (
+                <>
+                  <BarChart data={adherenceData} dataKey="rate" maxValue={100} color={COLORS.primary} />
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-label">Current Rate</div>
+                      <p className="stat-value">{getCurrentAdherenceRate()}%</p>
+                      <div className="stat-description">Latest month</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Average Rate</div>
+                      <p className="stat-value">{getAverageAdherenceRate()}%</p>
+                      <div className="stat-description">Overall performance</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Total Doses</div>
+                      <p className="stat-value">{adherenceData.reduce((acc, m) => acc + m.total, 0)}</p>
+                      <div className="stat-description">Tracked doses</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
+                  <p>No adherence data available yet</p>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-label">Average Rate</div>
-                  <p className="stat-value">87%</p>
-                  <div className="stat-description">Excellent performance</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-label">Trending</div>
-                  <p className="stat-value">📈</p>
-                  <div className="stat-description">Steady improvement</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="chart-card">
-              <h3>📋 Missed Doses Alert</h3>
-              <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', marginBottom: '16px' }}>
-                <p style={{ margin: 0, color: 'var(--green)', fontWeight: 600 }}>✓ No missed doses this week</p>
-                <p style={{ margin: '8px 0 0 0', color: 'var(--color-muted-2)', fontSize: '13px' }}>
-                  Keep up the excellent work! Your consistency helps with your recovery.
-                </p>
-              </div>
+              )}
             </div>
           </>
         )}
@@ -432,59 +568,31 @@ export default function Progress() {
         {activeTab === 'therapy' && (
           <>
             <div className="chart-card">
-              <h3>🏥 Therapy Sessions Completed (Last 4 Weeks)</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                {MOCK_THERAPY_DATA.map((week, idx) => (
-                  <div key={idx} style={{ textAlign: 'center' }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      gap: '4px',
-                      marginBottom: '12px'
+              <h3>🏥 Progress Logs</h3>
+              {progressLogs.length > 0 ? (
+                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  {progressLogs.map((log, idx) => (
+                    <div key={log.progress_log_id || idx} style={{
+                      padding: '12px',
+                      marginBottom: '12px',
+                      background: 'var(--color-bg)',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid ' + COLORS.blue
                     }}>
-                      {[...Array(week.total)].map((_, i) => (
-                        <div key={i} style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          backgroundColor: i < week.completed ? COLORS.green : 'var(--color-border)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: '12px',
-                          fontWeight: 700
-                        }}>
-                          {i < week.completed ? '✓' : ''}
-                        </div>
-                      ))}
+                      <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-text)', fontSize: '13px' }}>
+                        {new Date(log.logged_date || log.created_at).toLocaleDateString()}
+                      </p>
+                      <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                        {log.note || 'No details provided'}
+                      </p>
                     </div>
-                    <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: '14px', fontWeight: 600 }}>
-                      {week.week}
-                    </h4>
-                    <p style={{ margin: '4px 0 0 0', color: 'var(--color-muted-2)', fontSize: '12px' }}>
-                      {week.completed}/{week.total} completed
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <div className="stat-label">Completion Rate</div>
-                  <p className="stat-value">94%</p>
-                  <div className="stat-description">Strong adherence</div>
+                  ))}
                 </div>
-                <div className="stat-item">
-                  <div className="stat-label">Total Sessions</div>
-                  <p className="stat-value">15</p>
-                  <div className="stat-description">Out of 16 scheduled</div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
+                  <p>No progress logs available</p>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-label">Streak</div>
-                  <p className="stat-value">8 🔥</p>
-                  <div className="stat-description">Days in a row</div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         )}
@@ -492,25 +600,44 @@ export default function Progress() {
         {activeTab === 'vitals' && (
           <>
             <div className="chart-card">
-              <h3>❤️ Blood Pressure Trend (Systolic)</h3>
-              <LineChart data={MOCK_VITAL_SIGNS} maxValue={150} />
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <div className="stat-label">Current BP</div>
-                  <p className="stat-value">132/80</p>
-                  <div className="stat-description">Normal range</div>
+              <h3>❤️ Progress Snapshots</h3>
+              {snapshotData.length > 0 ? (
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  {snapshotData.slice(0, 5).map((snapshot, idx) => (
+                    <div key={snapshot.snapshot_id || idx} style={{
+                      padding: '16px',
+                      background: 'var(--color-bg)',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid ' + COLORS.teal
+                    }}>
+                      <p style={{ margin: '0 0 8px 0', fontWeight: 600, color: 'var(--color-text)', fontSize: '13px' }}>
+                        {new Date(snapshot.snapshot_date || snapshot.created_at).toLocaleDateString()}
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' }}>
+                        {snapshot.notes && (
+                          <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                            📝 {snapshot.notes}
+                          </p>
+                        )}
+                        {snapshot.blood_pressure && (
+                          <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                            🩸 BP: {snapshot.blood_pressure}
+                          </p>
+                        )}
+                        {snapshot.mobility_score && (
+                          <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                            🚶 Mobility: {snapshot.mobility_score}%
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="stat-item">
-                  <div className="stat-label">Improvement</div>
-                  <p className="stat-value">-13 mmHg</p>
-                  <div className="stat-description">In 20 days</div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
+                  <p>No snapshot data available</p>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-label">Status</div>
-                  <p className="stat-value">✓</p>
-                  <div className="stat-description">Controlled</div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         )}
@@ -518,59 +645,31 @@ export default function Progress() {
         {activeTab === 'timeline' && (
           <>
             <div className="chart-card">
-              <h3>📋 Recovery Timeline & Milestones</h3>
-              <RecoveryTimeline />
-            </div>
-
-            <div className="chart-card">
-              <h3>🎯 Upcoming Milestones</h3>
-              <div style={{ display: 'grid', gap: '12px' }}>
-                <div style={{
-                  padding: '16px',
-                  background: 'var(--color-bg)',
-                  borderRadius: '8px',
-                  borderLeft: `4px solid ${COLORS.blue}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }} 
-                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(104, 161, 209, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-                >
-                  <h4 style={{ margin: '0 0 4px 0', color: COLORS.blue, fontSize: '14px', fontWeight: 600 }}>
-                    Week 5 Milestone
-                  </h4>
-                  <p style={{ margin: '0 0 8px 0', color: 'var(--color-muted-2)', fontSize: '13px' }}>
-                    Begin advanced mobility exercises
-                  </p>
-                  <div style={{ width: '100%', height: '4px', background: 'var(--color-border)', borderRadius: '2px' }}>
-                    <div style={{ width: '60%', height: '100%', background: COLORS.blue, borderRadius: '2px' }} />
-                  </div>
+              <h3>📋 Patient Overview</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div className="stat-item">
+                  <div className="stat-label">Patient Name</div>
+                  <p className="stat-value" style={{ fontSize: '18px' }}>{selectedPatient?.name}</p>
                 </div>
-
-                <div style={{
-                  padding: '16px',
-                  background: 'var(--color-bg)',
-                  borderRadius: '8px',
-                  borderLeft: `4px solid ${COLORS.teal}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(121, 174, 179, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-                >
-                  <h4 style={{ margin: '0 0 4px 0', color: COLORS.teal, fontSize: '14px', fontWeight: 600 }}>
-                    Week 8 Milestone
-                  </h4>
-                  <p style={{ margin: '0 0 8px 0', color: 'var(--color-muted-2)', fontSize: '13px' }}>
-                    Return to light physical activities
-                  </p>
-                  <div style={{ width: '100%', height: '4px', background: 'var(--color-border)', borderRadius: '2px' }}>
-                    <div style={{ width: '0%', height: '100%', background: COLORS.teal, borderRadius: '2px' }} />
-                  </div>
+                <div className="stat-item">
+                  <div className="stat-label">Unique Code</div>
+                  <p className="stat-value" style={{ fontSize: '16px' }}>{selectedPatient?.unique_code}</p>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-label">Total Logs</div>
+                  <p className="stat-value">{progressLogs.length}</p>
+                  <div className="stat-description">Progress entries</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-label">Adherence</div>
+                  <p className="stat-value">{getCurrentAdherenceRate()}%</p>
+                  <div className="stat-description">Current rate</div>
                 </div>
               </div>
             </div>
           </>
+        )}
+        </>
         )}
       </div>
     </div>
