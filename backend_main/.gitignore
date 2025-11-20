@@ -1,24 +1,23 @@
-# Dependencies
-node_modules/
-package-lock.json
-yarn.lock
-
-# Environment variables
+node_modules
+# Keep environment variables out of version control
 .env
 .env.local
 .env.*.local
-.env.development
-.env.production
 
-# IDE and Editor
+/generated/prisma
+
+# IDE and Editor files
+>>>>>>> a5731e61b76cf07b483788dc707954ce6d7ae7bf
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-*.sublime-project
 *.sublime-workspace
+
+# OS files
+Thumbs.db
 
 # Logs
 logs/
@@ -26,7 +25,6 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
 # Runtime data
 pids/
@@ -42,11 +40,16 @@ coverage/
 dist/
 build/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+# Testing
+.jest/
 
-# OS specific
-Thumbs.db
-.DS_Store
+# Misc
+.turbo/
+
+# Documentation files to ignore
+*_SUMMARY.md
+*_GUIDE.md
+*_REPORT.md
+*_OVERVIEW.md
+TESTING_GUIDE_PHASE_4.5.md
+.gitignore_*
