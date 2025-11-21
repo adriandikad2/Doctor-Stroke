@@ -12,18 +12,29 @@ const API_BASE = window.location.origin.includes('localhost:8082')
 
 // Helper: Authenticated fetch
 async function authedFetch(url, options = {}) {
-  if (!authToken) {
+  // Always read the token from localStorage to ensure it's current
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    // Redirect to home page if not authenticated
+    navigateTo('home');
     throw new Error('Not authenticated');
   }
 
   const headers = new Headers(options.headers || {});
-  headers.append('Authorization', `Bearer ${authToken}`);
+  headers.append('Authorization', `Bearer ${token}`);
   headers.append('Content-Type', 'application/json');
 
   const res = await fetch(url, { ...options, headers });
 
   if (!res.ok) {
     const err = await res.json();
+    // If unauthorized, redirect to home page
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      navigateTo('home');
+      throw new Error(err.message || 'Authentication required');
+    }
     throw new Error(err.message || 'API request failed');
   }
 
@@ -81,7 +92,8 @@ function navigateTo(pageName) {
   // Update nav links
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.remove('active');
-    if (link.dataset.page === pageName) {
+    // Check if the link has a data-page attribute (not the logout button)
+    if (link.dataset.page && link.dataset.page === pageName) {
       link.classList.add('active');
     }
   });
@@ -105,13 +117,27 @@ function checkAuth() {
   authToken = localStorage.getItem('authToken');
   const userStr = localStorage.getItem('user');
   
-  if (authToken && userStr) {
-    currentUser = JSON.parse(userStr);
-    console.log('✅ Logged in as:', currentUser.email);
-    
-    // Hide signup/login forms, show diet navigation
-    document.getElementById('home-page').style.display = 'none';
-    navigateTo('diet');
+  if (authToken && userStr && userStr !== 'undefined') {
+    try {
+      currentUser = JSON.parse(userStr);
+      console.log('✅ Logged in as:', currentUser.email);
+      
+      // Show logout button, hide signup/login forms, show patients navigation
+      document.getElementById('home-page').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'block';
+      navigateTo('patients');  // Navigate to patients page as the main dashboard
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+      // Clear invalid auth data
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      authToken = null;
+      currentUser = null;
+      document.getElementById('logout-btn').style.display = 'none';
+    }
+  } else {
+    // Hide logout button if not authenticated
+    document.getElementById('logout-btn').style.display = 'none';
   }
 }
 
@@ -128,10 +154,15 @@ document.getElementById('signup').addEventListener('submit', async (e) => {
   }
 
   try {
+    // Split name into first and last name for the backend
+    const nameParts = name.split(' ');
+    const first_name = nameParts[0] || name; // Use the whole name if no space found
+    const last_name = nameParts.slice(1).join(' ') || ' '; // Use remaining parts or a space as placeholder
+    
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role: 'family' })
+      body: JSON.stringify({ first_name, last_name, email, password, role: 'family' })
     });
 
     const data = await res.json();
@@ -181,11 +212,12 @@ document.getElementById('login').addEventListener('submit', async (e) => {
       
       showMessage('login-msg', 'Signed in successfully!', 'success');
       
-      // Navigate to diet page
+      // Show logout button and navigate to patients page as the main dashboard
       setTimeout(() => {
         document.getElementById('home-page').style.display = 'none';
-        navigateTo('diet');
-      }, 1000);
+        document.getElementById('logout-btn').style.display = 'block';
+        navigateTo('patients');
+      }, 100);
     } else {
       showMessage('login-msg', data.message || 'Login failed', 'error');
     }
@@ -207,17 +239,72 @@ document.getElementById('signup-toggle').addEventListener('click', () => {
 
 // Navigation listeners
 document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
+  link.addEventListener('click', (e) => {
     const page = link.dataset.page;
     
-    if (!authToken && page !== 'home') {
+    // Check if this is the logout button (has no data-page attribute)
+    if (!page) {
+      // This is the logout button, prevent default navigation and call logout
+      e.preventDefault();
+      logout();
+      return;
+    }
+    
+    // Check localStorage directly instead of in-memory variable
+    const token = localStorage.getItem('authToken');
+    if (!token && page !== 'home') {
       alert('Please sign in first');
+      navigateTo('home'); // Navigate back to home page
       return;
     }
     
     navigateTo(page);
   });
 });
+
+// Logout function
+function logout() {
+  // Clear authentication data from localStorage
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('user');
+  
+  // Reset global state variables
+  authToken = null;
+  currentUser = null;
+  patients = [];
+  selectedPatientId = null;
+  
+  // Show signup/login forms, hide other pages
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+  document.getElementById('home-page').style.display = 'block';
+  document.getElementById('home-page').classList.add('active');
+  
+  // Reset navigation menu
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+  document.querySelector('.nav-link[data-page="home"]').classList.add('active');
+  
+  // Hide logout button and show it as inactive
+  document.getElementById('logout-btn').style.display = 'none';
+  
+  // Reset any form inputs
+  const loginForm = document.getElementById('login');
+  if (loginForm) loginForm.reset();
+  const signupForm = document.getElementById('signup');
+  if (signupForm) signupForm.reset();
+}
+
+// Add logout listener if logout button exists
+const logoutButton = document.getElementById('logout-btn');
+if (logoutButton) {
+  logoutButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    logout();
+  });
+}
 
 // Diet Page Functions
 async function loadDietPage() {
@@ -733,5 +820,18 @@ function getMealTypeEmoji(type) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
+});
+
+// Add event listener for page visibility changes to maintain authentication state
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    // Page became visible again, check authentication state
+    checkAuth();
+  }
+});
+
+// Also check authentication state when the page is focused
+window.addEventListener('focus', () => {
   checkAuth();
 });
