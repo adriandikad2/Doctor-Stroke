@@ -72,22 +72,24 @@ model family_profiles {
 }
 
 model patient_profiles {
-  patient_id        String                       @id @default(uuid()) @db.Uuid
-  name              String
-  date_of_birth     DateTime                     @db.Date
-  gender            gender_enum?
-  medical_history   String?
-  unique_code       String                       @unique @db.VarChar(20)
-  created_at        DateTime                     @default(now())
-  updated_at        DateTime                     @updatedAt
-  appointments      appointments[]
-  meal_logs         meal_logs[]
-  adherence_logs    medication_adherence_logs[]
-  nutrition_profile nutrition_profiles?
-  care_team_links   patient_care_team[]
-  snapshots         patient_progress_snapshots[]
-  prescriptions     prescriptions[]
-  progress_logs     progress_logs[]
+  patient_id      String    @id @default(uuid()) @db.Uuid
+  name            String
+  date_of_birth   DateTime  @db.Date
+  gender          gender_enum?
+  medical_history String?
+  unique_code     String    @unique @db.VarChar(20) // Format: PASIEN-XXXXXX
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // --- Relasi (Hal-hal yang "Dimiliki" Pasien) ---
+  care_team_links     patient_care_team[]
+  appointments        appointments[]
+  prescriptions       prescriptions[]
+  adherence_logs      medication_adherence_logs[]
+  nutrition_profile   nutrition_profiles? // Relasi 1-ke-1
+  meal_logs           meal_logs[]
+  snapshots           patient_progress_snapshots[]
+  progress_logs       progress_logs[]
 
   @@map("patient_profiles")
 }

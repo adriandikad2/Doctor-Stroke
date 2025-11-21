@@ -91,6 +91,12 @@ function navigateTo(pageName) {
   // Load page data
   if (pageName === 'diet' && authToken) {
     loadDietPage();
+  } else if (pageName === 'patients' && authToken) {
+    loadPatientsPage();
+  } else if (pageName === 'medications' && authToken) {
+    loadMedicationsPage();
+  } else if (pageName === 'progress' && authToken) {
+    loadProgressPage();
   }
 }
 
@@ -125,7 +131,7 @@ document.getElementById('signup').addEventListener('submit', async (e) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role: 'caregiver' })
+      body: JSON.stringify({ name, email, password, role: 'family' })
     });
 
     const data = await res.json();
@@ -219,9 +225,9 @@ async function loadDietPage() {
     showLoading('diet-loading', true);
     hideError('diet-error');
     
-    // Fetch patients
-    const data = await authedFetch(`${API_BASE}/patients`);
-    patients = data.patients || [];
+    // Fetch patients - updated endpoint
+    const data = await authedFetch(`${API_BASE}/patients/me`);
+    patients = data.data || [];
     
     if (patients.length === 0) {
       showLoading('diet-loading', false);
@@ -274,20 +280,16 @@ async function loadDietData(patientId) {
     document.getElementById('diet-empty').style.display = 'none';
     
     // Fetch nutrition data in parallel
-    const [profileData, planData, mealsData] = await Promise.all([
-      authedFetch(`${API_BASE}/nutrition/patient/${patientId}/profile`),
-      authedFetch(`${API_BASE}/nutrition/patient/${patientId}/plan?days=7`),
-      authedFetch(`${API_BASE}/nutrition/patient/${patientId}/meals`)
+    const [profileData, mealsData] = await Promise.all([
+      authedFetch(`${API_BASE}/nutrition/${patientId}`),  // Updated endpoint
+      authedFetch(`${API_BASE}/logs/meal/${patientId}`)  // Updated endpoint for meals
     ]);
     
     // Render nutrition profile
-    renderNutritionProfile(profileData.profile);
-    
-    // Render meal plan
-    renderMealPlan(planData.plan || []);
+    renderNutritionProfile(profileData.data);  // Updated to access .data property
     
     // Render recent meals
-    renderRecentMeals(mealsData.meals || []);
+    renderRecentMeals(mealsData.data || []);  // Updated to access .data property
     
     // Show content
     showLoading('diet-loading', false);
@@ -297,6 +299,348 @@ async function loadDietData(patientId) {
     showLoading('diet-loading', false);
     showError('diet-error', err.message);
   }
+}
+
+// Patients Page Functions
+async function loadPatientsPage() {
+ try {
+   showLoading('patients-loading', true);
+   hideError('patients-error');
+   
+   // Fetch patients
+   const data = await authedFetch(`${API_BASE}/patients/me`);
+   patients = data.data || [];
+   
+   if (patients.length === 0) {
+     showLoading('patients-loading', false);
+     document.getElementById('patients-empty').style.display = 'block';
+     return;
+   }
+   
+   // Render patients list
+   renderPatientsList(patients);
+   showLoading('patients-loading', false);
+   document.getElementById('patients-empty').style.display = 'none';
+   
+ } catch (err) {
+   showLoading('patients-loading', false);
+   showError('patients-error', err.message);
+ }
+}
+
+// Render patients list
+function renderPatientsList(patients) {
+ const container = document.getElementById('patients-list');
+ container.innerHTML = patients.map(patient => `
+   <div class="patient-card">
+     <h3>${patient.name}</h3>
+     <p><strong>DOB:</strong> ${new Date(patient.date_of_birth).toLocaleDateString()}</p>
+     <p><strong>Gender:</strong> ${patient.gender || 'Not specified'}</p>
+     <p><strong>Unique Code:</strong> ${patient.unique_code}</p>
+     <div class="patient-actions">
+       <button class="btn secondary" onclick="navigateToPatientDetails('${patient.patient_id}')">View Details</button>
+     </div>
+   </div>
+ `).join('');
+}
+
+// Medications Page Functions
+async function loadMedicationsPage() {
+ try {
+   showLoading('medications-loading', true);
+   hideError('medications-error');
+   
+   // Fetch patients
+   const data = await authedFetch(`${API_BASE}/patients/me`);
+   patients = data.data || [];
+   
+   if (patients.length === 0) {
+     showLoading('medications-loading', false);
+     document.getElementById('medications-empty').innerHTML = '<p>👋 No patients found. Ask your doctor to add you to a patient\'s care team.</p>';
+     document.getElementById('medications-empty').style.display = 'block';
+     return;
+   }
+   
+   // Populate patient selector
+   const selector = document.getElementById('medications-patient-select');
+   selector.innerHTML = '<option value="">-- Choose Patient --</option>';
+   
+   patients.forEach(patient => {
+     const option = document.createElement('option');
+     option.value = patient.patient_id;
+     option.textContent = patient.name;
+     selector.appendChild(option);
+   });
+   
+   // Show patient selector
+   showLoading('medications-loading', false);
+   document.getElementById('medications-patient-selector').style.display = 'block';
+   document.getElementById('medications-empty').style.display = 'block';
+   
+ } catch (err) {
+   showLoading('medications-loading', false);
+   showError('medications-error', err.message);
+ }
+}
+
+// Patient selector change handler for medications
+document.getElementById('medications-patient-select').addEventListener('change', async (e) => {
+ const patientId = e.target.value;
+ 
+ if (!patientId) {
+   document.getElementById('medications-content').style.display = 'none';
+   document.getElementById('medications-empty').style.display = 'block';
+   return;
+ }
+ 
+ await loadMedicationsData(patientId);
+});
+
+// Load medications data for selected patient
+async function loadMedicationsData(patientId) {
+ try {
+   showLoading('medications-loading', true);
+   hideError('medications-error');
+   document.getElementById('medications-content').style.display = 'none';
+   document.getElementById('medications-empty').style.display = 'none';
+   
+   // Fetch prescriptions and adherence data in parallel
+   const [prescriptionsData, adherenceData] = await Promise.all([
+     authedFetch(`${API_BASE}/prescriptions/${patientId}`),
+     authedFetch(`${API_BASE}/logs/adherence/${patientId}`)
+   ]);
+   
+   // Render prescriptions
+   renderPrescriptions(prescriptionsData.data || []);
+   
+   // Render adherence logs
+   renderAdherenceLogs(adherenceData.data || []);
+   
+   // Show content
+   showLoading('medications-loading', false);
+   document.getElementById('medications-content').style.display = 'block';
+   
+ } catch (err) {
+   showLoading('medications-loading', false);
+   showError('medications-error', err.message);
+ }
+}
+
+// Render prescriptions
+function renderPrescriptions(prescriptions) {
+ const container = document.getElementById('prescriptions-list');
+ 
+ if (!prescriptions || prescriptions.length === 0) {
+   container.innerHTML = '<p style="color: #888; text-align: center;">No prescriptions available.</p>';
+   return;
+ }
+ 
+ container.innerHTML = prescriptions.map(prescription => `
+   <div class="prescription-card">
+     <h4>${prescription.medication_name}</h4>
+     <p><strong>Dosage:</strong> ${prescription.dosage}</p>
+     <p><strong>Frequency:</strong> ${prescription.frequency_per_day} times per day</p>
+     <p><strong>Times:</strong> ${prescription.dosing_times.join(', ')}</p>
+     <p><strong>Instructions:</strong> ${prescription.instructions || 'None'}</p>
+     <p><strong>Active:</strong> ${prescription.is_active ? 'Yes' : 'No'}</p>
+   </div>
+ `).join('');
+}
+
+// Render adherence logs
+function renderAdherenceLogs(adherenceLogs) {
+ const container = document.getElementById('adherence-list');
+ 
+ if (!adherenceLogs || adherenceLogs.length === 0) {
+   container.innerHTML = '<p style="color: #888; text-align: center;">No adherence logs available.</p>';
+   return;
+ }
+ 
+ // Show only the most recent logs
+ const recentLogs = adherenceLogs.slice(0, 10);
+ 
+ container.innerHTML = recentLogs.map(log => `
+   <div class="adherence-card">
+     <div class="adherence-header">
+       <span class="adherence-status ${log.status}">${getAdherenceStatusEmoji(log.status)} ${formatAdherenceStatus(log.status)}</span>
+       <span class="adherence-date">${formatDate(log.created_at)}</span>
+     </div>
+     <p><strong>Medication:</strong> ${log.prescription?.medication_name || 'Unknown'}</p>
+     <p><strong>Scheduled:</strong> ${log.scheduled_time ? new Date(log.scheduled_time).toLocaleTimeString() : 'N/A'}</p>
+     <p><strong>Taken:</strong> ${log.taken_time ? new Date(log.taken_time).toLocaleTimeString() : 'Not taken'}</p>
+     ${log.notes ? `<p><strong>Notes:</strong> ${log.notes}</p>` : ''}
+   </div>
+ `).join('');
+}
+
+// Progress Page Functions
+async function loadProgressPage() {
+ try {
+   showLoading('progress-loading', true);
+   hideError('progress-error');
+   
+   // Fetch patients
+   const data = await authedFetch(`${API_BASE}/patients/me`);
+   patients = data.data || [];
+   
+   if (patients.length === 0) {
+     showLoading('progress-loading', false);
+     document.getElementById('progress-empty').innerHTML = '<p>👋 No patients found. Ask your doctor to add you to a patient\'s care team.</p>';
+     document.getElementById('progress-empty').style.display = 'block';
+     return;
+   }
+   
+   // Populate patient selector
+   const selector = document.getElementById('progress-patient-select');
+   selector.innerHTML = '<option value="">-- Choose Patient --</option>';
+   
+   patients.forEach(patient => {
+     const option = document.createElement('option');
+     option.value = patient.patient_id;
+     option.textContent = patient.name;
+     selector.appendChild(option);
+   });
+   
+   // Show patient selector
+   showLoading('progress-loading', false);
+   document.getElementById('progress-patient-selector').style.display = 'block';
+   document.getElementById('progress-empty').style.display = 'block';
+   
+ } catch (err) {
+   showLoading('progress-loading', false);
+   showError('progress-error', err.message);
+ }
+}
+
+// Patient selector change handler for progress
+document.getElementById('progress-patient-select').addEventListener('change', async (e) => {
+ const patientId = e.target.value;
+ 
+ if (!patientId) {
+   document.getElementById('progress-content').style.display = 'none';
+   document.getElementById('progress-empty').style.display = 'block';
+   return;
+ }
+ 
+ await loadProgressData(patientId);
+});
+
+// Load progress data for selected patient
+async function loadProgressData(patientId) {
+ try {
+   showLoading('progress-loading', true);
+   hideError('progress-error');
+   document.getElementById('progress-content').style.display = 'none';
+   document.getElementById('progress-empty').style.display = 'none';
+   
+   // Fetch progress data in parallel
+   const [snapshotsData, logsData] = await Promise.all([
+     authedFetch(`${API_BASE}/logs/snapshot/${patientId}`),
+     authedFetch(`${API_BASE}/logs/progress/${patientId}`)
+   ]);
+   
+   // Render snapshots
+   renderProgressSnapshots(snapshotsData.data || []);
+   
+   // Render progress logs
+   renderProgressLogs(logsData.data || []);
+   
+   // Show content
+   showLoading('progress-loading', false);
+   document.getElementById('progress-content').style.display = 'block';
+   
+ } catch (err) {
+   showLoading('progress-loading', false);
+   showError('progress-error', err.message);
+ }
+}
+
+// Render progress snapshots
+function renderProgressSnapshots(snapshots) {
+ const container = document.getElementById('snapshots-list');
+ 
+ if (!snapshots || snapshots.length === 0) {
+   container.innerHTML = '<p style="color: #888; text-align: center;">No progress snapshots available.</p>';
+   return;
+ }
+ 
+ // Show only the most recent snapshots
+ const recentSnapshots = snapshots.slice(0, 10);
+ 
+ container.innerHTML = recentSnapshots.map(snapshot => `
+   <div class="snapshot-card">
+     <div class="snapshot-header">
+       <span class="snapshot-date">${formatDate(snapshot.recorded_at)}</span>
+       <span class="snapshot-mood">${getMoodEmoji(snapshot.mood)} ${snapshot.mood || 'N/A'}</span>
+     </div>
+     <div class="snapshot-metrics">
+       <p><strong>Symptom Score:</strong> ${snapshot.symptom_score || 'N/A'}/10</p>
+       <p><strong>Mobility Score:</strong> ${snapshot.mobility_score || 'N/A'}/10</p>
+       <p><strong>Exercise Completed:</strong> ${snapshot.exercise_completed ? 'Yes' : 'No'}</p>
+       <p><strong>Blood Pressure:</strong> ${snapshot.blood_pressure_systolic ? `${snapshot.blood_pressure_systolic}/${snapshot.blood_pressure_diastolic} mmHg` : 'N/A'}</p>
+     </div>
+     ${snapshot.notes ? `<p><strong>Notes:</strong> ${snapshot.notes}</p>` : ''}
+   </div>
+ `).join('');
+}
+
+// Render progress logs
+function renderProgressLogs(progressLogs) {
+ const container = document.getElementById('progress-logs-list');
+ 
+ if (!progressLogs || progressLogs.length === 0) {
+   container.innerHTML = '<p style="color: #888; text-align: center;">No progress logs available.</p>';
+   return;
+ }
+ 
+ // Show only the most recent logs
+ const recentLogs = progressLogs.slice(0, 10);
+ 
+ container.innerHTML = recentLogs.map(log => `
+   <div class="progress-log-card">
+     <div class="progress-log-header">
+       <span class="progress-log-date">${formatDate(log.created_at)}</span>
+       <span class="progress-log-author">${log.author_role === 'medical' ? '🏥 Medical' : '👥 Family'}</span>
+     </div>
+     <p>${log.log_text}</p>
+   </div>
+ `).join('');
+}
+
+// Helper function to navigate to patient details (placeholder)
+function navigateToPatientDetails(patientId) {
+ // For now, just alert the patient ID - in a real implementation, this would navigate to a patient details page
+ alert(`Navigating to patient details for ID: ${patientId}`);
+}
+
+// Helper functions for medications and progress pages
+function getAdherenceStatusEmoji(status) {
+ const map = {
+   taken: '✅',
+   missed: '❌',
+   delayed: '⏰'
+ };
+ return map[status] || '❓';
+}
+
+function formatAdherenceStatus(status) {
+ const map = {
+   taken: 'Taken',
+   missed: 'Missed',
+   delayed: 'Delayed'
+ };
+ return map[status] || status;
+}
+
+function getMoodEmoji(mood) {
+ const map = {
+   happy: '😊',
+   okay: '🙂',
+   sad: '😔',
+   anxious: '😰',
+   tired: '😴'
+ };
+ return map[mood] || '😐';
 }
 
 // Render nutrition profile
@@ -328,37 +672,6 @@ function renderNutritionProfile(profile) {
   `;
 }
 
-// Render meal plan
-function renderMealPlan(plan) {
-  const container = document.getElementById('meal-plan');
-  
-  if (!plan || plan.length === 0) {
-    container.innerHTML = '<p style="color: #888; text-align: center;">No meal plan available.</p>';
-    return;
-  }
-  
-  container.innerHTML = plan.map(day => `
-    <div class="meal-day">
-      <div class="meal-day-header">📅 ${formatDate(day.day)}</div>
-      <div class="meal-type">
-        <span class="meal-type-label">🌅 Breakfast:</span>
-        <span class="meal-type-value">${day.meals.breakfast.title}</span>
-      </div>
-      <div class="meal-type">
-        <span class="meal-type-label">☀️ Lunch:</span>
-        <span class="meal-type-value">${day.meals.lunch.title}</span>
-      </div>
-      <div class="meal-type">
-        <span class="meal-type-label">🌙 Dinner:</span>
-        <span class="meal-type-value">${day.meals.dinner.title}</span>
-      </div>
-      <div class="meal-type">
-        <span class="meal-type-label">🍪 Snack:</span>
-        <span class="meal-type-value">${day.meals.snack.title}</span>
-      </div>
-    </div>
-  `).join('');
-}
 
 // Render recent meals
 function renderRecentMeals(meals) {
