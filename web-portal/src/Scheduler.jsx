@@ -97,7 +97,7 @@ export default function Scheduler({ user }){
 
   return (
     <section className="scheduler" style={{ marginTop: 20 }}>
-      <h3>📅 Scheduling Management</h3>
+      <h3>📅 Patient Appointment Management</h3>
       
       {error && <div style={{ 
         color: '#d32f2f', 

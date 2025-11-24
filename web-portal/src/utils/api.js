@@ -502,8 +502,12 @@ export const clearAuth = () => {
  * Save authentication data to localStorage
  */
 export const saveAuth = (token, user) => {
-  localStorage.setItem('authToken', token);
-  localStorage.setItem('user', JSON.stringify(user));
+  if (token) {
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(user || {}));
+  } else {
+    console.error('Attempting to save null/undefined token');
+  }
 };
 
 /**

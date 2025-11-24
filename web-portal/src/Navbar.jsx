@@ -194,7 +194,7 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
 
       <div className="brand" onClick={() => { onNavigate('home'); setMobileMenuOpen(false); }}>
         <div className="brand-mark" />
-        <h1>Doctor Stroke</h1>
+        <h1>Doctor Stroke — Clinician Portal</h1>
       </div>
 
       <nav className={mobileMenuOpen ? 'mobile-open' : ''}>

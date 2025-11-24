@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 8082;
-const BACKEND = process.env.BACKEND_URL || 'http://localhost:3001';  // Updated
+const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';  // Updated
 
 app.use(express.static(path.join(__dirname, '.')));
 app.use(express.json());

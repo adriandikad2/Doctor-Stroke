@@ -64,8 +64,8 @@ export default function Signup({ onClose }){
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <h3>Create an account</h3>
-        <p>Sign up as Doctor/Therapist to access Doctor Stroke</p>
+        <h3>Clinician Registration</h3>
+        <p>Register as a healthcare professional to access clinical tools and patient management</p>
         
         {error && <div style={{ 
           color: '#d32f2f', 

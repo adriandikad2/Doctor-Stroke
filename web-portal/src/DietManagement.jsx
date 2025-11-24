@@ -409,23 +409,23 @@ export default function DietManagement({ user }) {
         }
       `}</style>
 
-      <h3>Manajemen Diet & Nutrisi</h3>
+      <h3>🥗 Nutrition Management</h3>
       
       {error && <div className="error-message">❌ Error: {error}</div>}
       
       <div className="patient-selector">
-        <label htmlFor="patient-select">🏥 Pilih Pasien</label>
+        <label htmlFor="patient-select">🏥 Select Patient</label>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select 
-            id="patient-select" 
-            value={selectedPatient?.patient_id || ''} 
+          <select
+            id="patient-select"
+            value={selectedPatient?.patient_id || ''}
             onChange={(e) => {
               const patient = patients.find(p => p.patient_id === e.target.value);
               setSelectedPatient(patient || null);
             }}
             style={{ marginBottom: 0 }}
           >
-            <option value="">-- Pilih Pasien --</option>
+            <option value="">-- Select Patient --</option>
             {patients.map(p => (
               <option key={p.patient_id} value={p.patient_id}>{p.name}</option>
             ))}
@@ -436,7 +436,7 @@ export default function DietManagement({ user }) {
 
       {!selectedPatient && !loading && (
         <div className="empty-state">
-          <p style={{ fontSize: '14px' }}>👉 Silakan pilih pasien untuk melihat data nutrisi dan rencana diet.</p>
+          <p style={{ fontSize: '14px' }}>👉 Please select a patient to view nutrition data and diet plans.</p>
         </div>
       )}
 
@@ -446,101 +446,101 @@ export default function DietManagement({ user }) {
           {/* Left Panel: Forms */}
           <div>
             <div className="form-card">
-              <h4>📋 Profil Nutrisi</h4>
+              <h4>📋 Patient Nutrition Profile</h4>
               <form onSubmit={handleUpdateProfile}>
                 <div>
-                  <label>Batas Sodium (mg)</label>
-                  <input 
-                    type="number" 
+                  <label>Sodium Limit (mg)</label>
+                  <input
+                    type="number"
                     name="sodium_limit_mg"
-                    value={profileForm.sodium_limit_mg} 
-                    onChange={(e) => setProfileForm({...profileForm, sodium_limit_mg: e.target.value})} 
-                    placeholder="mis: 1500"
+                    value={profileForm.sodium_limit_mg}
+                    onChange={(e) => setProfileForm({...profileForm, sodium_limit_mg: e.target.value})}
+                    placeholder="e.g., 1500"
                   />
                 </div>
                 <div>
-                  <label>Target Serat (g)</label>
-                  <input 
-                    type="number" 
+                  <label>Fiber Target (g)</label>
+                  <input
+                    type="number"
                     name="fiber_target_g"
-                    value={profileForm.fiber_target_g} 
-                    onChange={(e) => setProfileForm({...profileForm, fiber_target_g: e.target.value})} 
-                    placeholder="mis: 25"
+                    value={profileForm.fiber_target_g}
+                    onChange={(e) => setProfileForm({...profileForm, fiber_target_g: e.target.value})}
+                    placeholder="e.g., 25"
                   />
                 </div>
                 <div>
-                  <label>Target Kalori (Maksimal)</label>
-                  <input 
-                    type="number" 
+                  <label>Calorie Target (Maximum)</label>
+                  <input
+                    type="number"
                     name="calorie_target_max"
-                    value={profileForm.calorie_target_max} 
-                    onChange={(e) => setProfileForm({...profileForm, calorie_target_max: e.target.value})} 
-                    placeholder="mis: 1800"
+                    value={profileForm.calorie_target_max}
+                    onChange={(e) => setProfileForm({...profileForm, calorie_target_max: e.target.value})}
+                    placeholder="e.g., 1800"
                   />
                 </div>
                 <button type="submit" style={{ background: 'var(--blue)', color: 'white' }}>
-                  💾 Update Profil
+                  💾 Update Profile
                 </button>
               </form>
               
               <hr className="diet-divider" />
               
-              <h4>🍽️ Catat Makanan Baru</h4>
+              <h4>🍽️ Log New Meal</h4>
               <form onSubmit={handleLogMeal}>
                 <div>
-                  <label>Jenis Makanan</label>
-                  <select 
-                    name="meal_type" 
-                    value={mealForm.meal_type} 
+                  <label>Meal Type</label>
+                  <select
+                    name="meal_type"
+                    value={mealForm.meal_type}
                     onChange={(e) => setMealForm({...mealForm, meal_type: e.target.value})}
                   >
-                    <option value="breakfast">🌅 Sarapan</option>
-                    <option value="lunch">☀️ Makan Siang</option>
-                    <option value="dinner">🌙 Makan Malam</option>
-                    <option value="snack">🍪 Camilan</option>
+                    <option value="breakfast">🌅 Breakfast</option>
+                    <option value="lunch">☀️ Lunch</option>
+                    <option value="dinner">🌙 Dinner</option>
+                    <option value="snack">🍪 Snack</option>
                   </select>
                 </div>
                 <div>
-                  <label>Makanan (pisahkan dengan koma)</label>
-                  <input 
-                    name="foods_consumed" 
-                    value={mealForm.foods_consumed} 
-                    onChange={(e) => setMealForm({...mealForm, foods_consumed: e.target.value})} 
-                    placeholder="mis: oatmeal, apel, susu" 
+                  <label>Foods (separate with commas)</label>
+                  <input
+                    name="foods_consumed"
+                    value={mealForm.foods_consumed}
+                    onChange={(e) => setMealForm({...mealForm, foods_consumed: e.target.value})}
+                    placeholder="e.g., oatmeal, apple, milk"
                   />
                 </div>
                 <div>
-                  <label>Kalori (kkal)</label>
-                  <input 
-                    name="calories" 
-                    value={mealForm.calories} 
-                    onChange={(e) => setMealForm({...mealForm, calories: e.target.value})} 
-                    placeholder="mis: 350" 
-                    type="number" 
+                  <label>Calories (kcal)</label>
+                  <input
+                    name="calories"
+                    value={mealForm.calories}
+                    onChange={(e) => setMealForm({...mealForm, calories: e.target.value})}
+                    placeholder="e.g., 350"
+                    type="number"
                   />
                 </div>
                 <div>
                   <label>Sodium (mg)</label>
-                  <input 
-                    name="sodium_mg" 
-                    value={mealForm.sodium_mg} 
-                    onChange={(e) => setMealForm({...mealForm, sodium_mg: e.target.value})} 
-                    placeholder="mis: 200" 
-                    type="number" 
+                  <input
+                    name="sodium_mg"
+                    value={mealForm.sodium_mg}
+                    onChange={(e) => setMealForm({...mealForm, sodium_mg: e.target.value})}
+                    placeholder="e.g., 200"
+                    type="number"
                   />
                 </div>
                 <div>
-                  <label>Serat (g)</label>
-                  <input 
-                    name="fiber_g" 
-                    value={mealForm.fiber_g} 
-                    onChange={(e) => setMealForm({...mealForm, fiber_g: e.target.value})} 
-                    placeholder="mis: 5" 
-                    type="number" 
+                  <label>Fiber (g)</label>
+                  <input
+                    name="fiber_g"
+                    value={mealForm.fiber_g}
+                    onChange={(e) => setMealForm({...mealForm, fiber_g: e.target.value})}
+                    placeholder="e.g., 5"
+                    type="number"
                   />
                 </div>
                 <button type="submit" style={{ background: 'var(--green)', color: 'white' }}>
-                  ✏️ Catat Makanan
+                  ✏️ Log Meal
                 </button>
               </form>
             </div>
@@ -549,36 +549,36 @@ export default function DietManagement({ user }) {
           {/* Right Panel: Data & Plans */}
           <div>
             <div className="form-card">
-              <h4>📅 Data Profil Nutrisi</h4>
+              <h4>📅 Nutrition Profile Data</h4>
               {profile ? (
                 <div style={{ fontSize: '13px' }}>
                   <div className="meal-item">
-                    <p className="meal-time">Batas Sodium: <strong>{profile.sodium_limit_mg || '-'} mg</strong></p>
-                    <p className="meal-time">Target Serat: <strong>{profile.fiber_target_g || '-'} g</strong></p>
-                    <p className="meal-time">Target Kalori: <strong>{profile.calorie_target_max || '-'} kkal</strong></p>
+                    <p className="meal-time">Sodium Limit: <strong>{profile.sodium_limit_mg || '-'} mg</strong></p>
+                    <p className="meal-time">Fiber Target: <strong>{profile.fiber_target_g || '-'} g</strong></p>
+                    <p className="meal-time">Calorie Target: <strong>{profile.calorie_target_max || '-'} kcal</strong></p>
                   </div>
                 </div>
               ) : (
-                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>Belum ada profil nutrisi</p>
+                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>No nutrition profile available</p>
               )}
             </div>
 
             <div className="form-card">
-              <h4>📝 Riwayat Makanan Tercatat</h4>
+              <h4>📝 Recorded Meal History</h4>
               <div className="meal-list">
                 {meals.length > 0 ? meals.map((meal, idx) => (
                   <div key={meal.meal_log_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
                     <p className="meal-time">{new Date(meal.logged_date || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
                     <p className="meal-foods">🍽️ {meal.foods_consumed}</p>
                     <div className="meal-nutrition">
-                      <span>⚡ {meal.calories || 0} kkal</span>
+                      <span>⚡ {meal.calories || 0} kcal</span>
                       <span>🧂 {meal.sodium_mg || 0}mg Na</span>
-                      <span>🌾 {meal.fiber_g || 0}g Serat</span>
+                      <span>🌾 {meal.fiber_g || 0}g Fiber</span>
                     </div>
                   </div>
                 )) : (
                   <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px', padding: '20px 0' }}>
-                    Belum ada makanan tercatat. Mulai catat sekarang! 👇
+                    No meals recorded yet. Start logging now! 👇
                   </p>
                 )}
               </div>
