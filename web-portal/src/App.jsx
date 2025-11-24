@@ -116,17 +116,17 @@ export default function App() {
               <h3>Key Modules</h3>
               <div className="module-grid">
                 <div className="module-card" onClick={() => handleNavigate('dashboard')} style={{cursor: 'pointer'}}>
-                  <div className="module-emoji">📊</div><h4>Dashboard</h4><p>Your patients overview today.</p>
+                  <div className="module-emoji">📊</div><h4>Patient Dashboard</h4><p>Monitor your patients' health status and recovery.</p>
                 </div>
                 <div className="module-card" onClick={() => handleNavigate('scheduler')} style={{cursor: 'pointer'}}>
-                  <div className="module-emoji">📅</div><h4>Scheduling</h4><p>Manage appointments and therapy sessions.</p>
+                  <div className="module-emoji">📅</div><h4>Scheduler</h4><p>Manage appointments and therapy sessions.</p>
                 </div>
                 <div className="module-card" onClick={() => handleNavigate('progress')} style={{cursor: 'pointer'}}>
-                  <div className="module-emoji">📈</div><h4>Progress</h4><p>Track patient recovery and adherence.</p>
+                  <div className="module-emoji">📈</div><h4>Progress Tracking</h4><p>Track patient recovery and adherence.</p>
                 </div>
                 
                 <div className="module-card" onClick={() => handleNavigate('diet')} style={{cursor: 'pointer'}}>
-                  <div className="module-emoji">🥗</div><h4>Diet</h4><p>Manage nutrition plans and logs.</p>
+                  <div className="module-emoji">🥗</div><h4>Nutrition Management</h4><p>Manage patient nutrition plans and logs.</p>
                 </div>
               </div>
             </section>
@@ -150,7 +150,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="app-footer">© {new Date().getFullYear()} Doctor Stroke — Group 7</footer>
+      <footer className="app-footer">© {new Date().getFullYear()} Doctor Stroke — Clinician Portal</footer>
       
       {showSignup && <Signup onClose={() => setShowSignup(false)} />}
       {showSignIn && <SignIn onClose={handleCloseSignIn} onSuccess={handleSignInSuccess} />}
@@ -204,7 +204,7 @@ function LinkPatientModal({ onClose, onSuccess }) {
     <div className="modal-overlay">
       <div className="modal-content" style={{ width: 'min(400px, 94%)' }}>
         <h3>Link Patient</h3>
-        <p>Enter the unique patient code to connect with a patient.</p>
+        <p>Enter the unique patient code to connect with a patient for care management.</p>
 
         {error && <div style={{ 
           color: '#d32f2f', 

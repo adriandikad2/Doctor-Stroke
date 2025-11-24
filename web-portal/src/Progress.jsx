@@ -474,7 +474,7 @@ export default function Progress() {
 
       <div className="progress-container">
         <div className="progress-header">
-          <h2>📊 Progress & Recovery</h2>
+          <h2>📊 Patient Progress & Recovery</h2>
           <p>Comprehensive overview of patient recovery and treatment adherence</p>
         </div>
 
@@ -671,7 +671,7 @@ export default function Progress() {
         {activeTab === 'timeline' && (
           <>
             <div className="chart-card">
-              <h3>📋 Patient Overview</h3>
+              <h3>📋 Patient Clinical Overview</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div className="stat-item">
                   <div className="stat-label">Patient Name</div>

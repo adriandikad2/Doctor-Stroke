@@ -422,8 +422,8 @@ export default function Dashboard({ user }) {
       `}</style>
 
       <div className="dashboard-header">
-        <h2>📊 Patient Dashboard</h2>
-        <p>Manage and monitor your patients' health status</p>
+        <h2>📊 Clinician Dashboard</h2>
+        <p>Monitor and manage your patients' health status and treatment progress</p>
         
         {/* Patient Selector */}
         <div style={{ marginTop: '20px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>

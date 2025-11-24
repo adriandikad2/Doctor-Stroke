@@ -10,6 +10,29 @@ const API_BASE = window.location.origin.includes('localhost:8082')
   ? 'http://localhost:3001/api' 
   : '/api';
 
+
+// 2. THE NEW CODE: Session Restoration (Runs once when page loads)
+document.addEventListener('DOMContentLoaded', () => {
+  const storedToken = localStorage.getItem('authToken');
+  const storedUser = localStorage.getItem('user');
+
+  if (storedToken && storedUser && storedToken !== 'undefined') {
+    // Restore state
+    authToken = storedToken;
+    currentUser = JSON.parse(storedUser);
+
+    // Update UI
+    document.getElementById('home-page').style.display = 'none';
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.style.display = 'block';
+
+    console.log("Session restored! Navigating to dashboard...");
+    
+    // Redirect to the main page immediately
+    navigateTo('patients'); 
+  }
+});
+
 // Helper: Authenticated fetch
 async function authedFetch(url, options = {}) {
   // Always read the token from localStorage to ensure it's current
@@ -30,8 +53,15 @@ async function authedFetch(url, options = {}) {
     const err = await res.json();
     // If unauthorized, redirect to home page
     if (res.status === 401 || res.status === 403) {
+      // Clear authentication data
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      authToken = null;
+      currentUser = null;
+      // Hide logout button and show login forms
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) logoutBtn.style.display = 'none';
+      // Navigate to home page
       navigateTo('home');
       throw new Error(err.message || 'Authentication required');
     }
@@ -100,6 +130,10 @@ function navigateTo(pageName) {
 
   currentPage = pageName;
 
+  // Update URL without reloading the page (client-side routing)
+  const newUrl = pageName === 'home' ? '/' : `/#${pageName}`;
+  window.history.pushState({ page: pageName }, '', newUrl);
+
   // Load page data
   if (pageName === 'diet' && authToken) {
     loadDietPage();
@@ -114,6 +148,7 @@ function navigateTo(pageName) {
 
 // Check authentication on load
 function checkAuth() {
+  // Always read the token from localStorage to ensure it's current
   authToken = localStorage.getItem('authToken');
   const userStr = localStorage.getItem('user');
   
@@ -122,10 +157,28 @@ function checkAuth() {
       currentUser = JSON.parse(userStr);
       console.log('✅ Logged in as:', currentUser.email);
       
-      // Show logout button, hide signup/login forms, show patients navigation
-      document.getElementById('home-page').style.display = 'none';
-      document.getElementById('logout-btn').style.display = 'block';
-      navigateTo('patients');  // Navigate to patients page as the main dashboard
+      // Show logout button and hide signup/login forms
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.style.display = 'block';
+        logoutBtn.classList.add('active'); // Make sure it's visible and active
+      }
+      
+      // Show main navigation and hide login forms
+      const homePage = document.getElementById('home-page');
+      if (homePage) {
+        homePage.style.display = 'none';
+      }
+      
+      // Navigate to appropriate page based on auth state
+      // Check if there's a specific page in the URL hash
+      const hash = window.location.hash.substring(1);
+      if (hash && hash !== 'home') {
+        navigateTo(hash);
+      } else {
+        // Default to patients page as the main dashboard
+        navigateTo('patients');
+      }
     } catch (e) {
       console.error('Error parsing user data:', e);
       // Clear invalid auth data
@@ -133,11 +186,26 @@ function checkAuth() {
       localStorage.removeItem('user');
       authToken = null;
       currentUser = null;
-      document.getElementById('logout-btn').style.display = 'none';
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.style.display = 'none';
+        logoutBtn.classList.remove('active');
+      }
     }
   } else {
     // Hide logout button if not authenticated
-    document.getElementById('logout-btn').style.display = 'none';
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.style.display = 'none';
+      logoutBtn.classList.remove('active');
+    }
+    
+    // Show login/signup page
+    const homePage = document.getElementById('home-page');
+    if (homePage) {
+      homePage.style.display = 'block';
+      navigateTo('home');
+    }
   }
 }
 
@@ -205,8 +273,14 @@ document.getElementById('login').addEventListener('submit', async (e) => {
 
     if (res.ok) {
       // Save auth data
-      authToken = data.token;
-      currentUser = data.user;
+      // ❌ OLD (Broken): data.token is undefined because it's inside 'data.data'
+      // authToken = data.token;
+      // currentUser = data.user;
+
+      // ✅ NEW (Fixed): Access the nested 'data' object
+      authToken = data.data.token;
+      currentUser = data.data.user;
+
       localStorage.setItem('authToken', authToken);
       localStorage.setItem('user', JSON.stringify(currentUser));
       
@@ -287,14 +361,21 @@ function logout() {
   });
   document.querySelector('.nav-link[data-page="home"]').classList.add('active');
   
-  // Hide logout button and show it as inactive
-  document.getElementById('logout-btn').style.display = 'none';
+  // Hide logout button
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.style.display = 'none';
+    logoutBtn.classList.remove('active');
+  }
   
   // Reset any form inputs
   const loginForm = document.getElementById('login');
   if (loginForm) loginForm.reset();
   const signupForm = document.getElementById('signup');
   if (signupForm) signupForm.reset();
+  
+  // Reset the currentPage to 'home'
+  currentPage = 'home';
 }
 
 // Add logout listener if logout button exists
@@ -821,6 +902,23 @@ function getMealTypeEmoji(type) {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
+  
+  // Handle browser back/forward buttons
+  window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.page) {
+      navigateTo(event.state.page);
+    } else {
+      // Default to home if no state
+      navigateTo('home');
+    }
+  });
+  
+  // Check URL hash on initial load to navigate to the correct page
+  const hash = window.location.hash.substring(1);
+  if (hash && authToken) {
+    // If there's a hash and user is authenticated, navigate to that page
+    navigateTo(hash);
+  }
 });
 
 // Add event listener for page visibility changes to maintain authentication state

@@ -36,8 +36,15 @@ export default function SignIn({ onClose, onSuccess }){
         }
         
         // Save auth data
-        saveAuth(token, user);
-        console.log('Auth saved successfully, token:', token);
+        if (token) {
+          saveAuth(token, user);
+          console.log('Auth saved successfully, token:', token);
+        } else {
+          console.error('No token received from server');
+          setError('No token received from server');
+          setLoading(false);
+          return;
+        }
         
         setLoading(false)
         onSuccess && onSuccess(user, token)
@@ -56,8 +63,8 @@ export default function SignIn({ onClose, onSuccess }){
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ width: 'min(420px, 94%)' }}>
-        <h3>Sign in</h3>
-        <p>Sign in to access clinician features</p>
+        <h3>Clinician Sign In</h3>
+        <p>Access patient management and clinical tools for stroke recovery</p>
         
         {error && <div style={{ 
           color: '#d32f2f', 
