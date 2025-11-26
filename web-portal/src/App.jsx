@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import Signup from './Signup'
 import Scheduler from './Scheduler'
 import SignIn from './SignIn'
 import DietManagement from './DietManagement'
@@ -26,7 +25,6 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [page, setPage] = useState('home')
   const [showSignIn, setShowSignIn] = useState(false)
-  const [showSignup, setShowSignup] = useState(false)
   const [showLinkPatient, setShowLinkPatient] = useState(false)
   const [pendingPage, setPendingPage] = useState(null)
 
@@ -41,7 +39,7 @@ export default function App() {
   }, [])
 
   const handleRequestAccess = () => {
-    setShowSignup(true)
+    setShowSignIn(true)
   }
 
   const handleNavigate = (targetPage) => {
@@ -152,7 +150,6 @@ export default function App() {
 
       <footer className="app-footer">© {new Date().getFullYear()} Doctor Stroke — Clinician Portal</footer>
       
-      {showSignup && <Signup onClose={() => setShowSignup(false)} />}
       {showSignIn && <SignIn onClose={handleCloseSignIn} onSuccess={handleSignInSuccess} />}
       {showLinkPatient && <LinkPatientModal onClose={() => setShowLinkPatient(false)} onSuccess={() => setShowLinkPatient(false)} />}
     </div>

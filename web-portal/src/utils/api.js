@@ -135,6 +135,20 @@ export const authAPI = {
   login: async (email, password) => {
     return apiRequest('/auth/login', 'POST', { email, password });
   },
+
+  /**
+   * Google OAuth login
+   */
+  googleLogin: async (googleToken) => {
+    return apiRequest('/auth/google', 'POST', { token: googleToken });
+  },
+
+  /**
+   * Apple OAuth login
+   */
+  appleLogin: async (appleToken) => {
+    return apiRequest('/auth/apple', 'POST', { token: appleToken });
+  },
 };
 
 // =========================================================
