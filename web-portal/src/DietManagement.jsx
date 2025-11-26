@@ -146,10 +146,16 @@ export default function DietManagement({ user }) {
     setError('');
 
     try {
+      const foodsArray = mealForm.foods_consumed
+        .split(',')
+        .map(food => food.trim())
+        .filter(food => food.length > 0);
+
       const response = await logAPI.meal.create({
         patient_id: selectedPatient.patient_id,
+        logged_for: new Date().toISOString(),
         meal_type: mealForm.meal_type,
-        foods_consumed: mealForm.foods_consumed,
+        foods: foodsArray, 
         calories: parseInt(mealForm.calories || 0, 10),
         sodium_mg: parseInt(mealForm.sodium_mg || 0, 10),
         fiber_g: parseInt(mealForm.fiber_g || 0, 10)
@@ -568,8 +574,8 @@ export default function DietManagement({ user }) {
               <div className="meal-list">
                 {meals.length > 0 ? meals.map((meal, idx) => (
                   <div key={meal.meal_log_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
-                    <p className="meal-time">{new Date(meal.logged_date || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
-                    <p className="meal-foods">🍽️ {meal.foods_consumed}</p>
+                    <p className="meal-time">{new Date(meal.logged_for || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
+                    <p className="meal-foods">🍽️ {Array.isArray(meal.foods) ? meal.foods.join(', ') : meal.foods}</p>
                     <div className="meal-nutrition">
                       <span>⚡ {meal.calories || 0} kcal</span>
                       <span>🧂 {meal.sodium_mg || 0}mg Na</span>
