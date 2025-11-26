@@ -78,7 +78,22 @@ export const getMyAppointments = async (userId) => {
  * @returns {Promise<array>} - Array of all slots
  */
 export const getMySlots = async (medicalUserId) => {
-  return appointmentRepository.findAllSlotsByMedicalUserId(medicalUserId);
+  return await prisma.availability_slots.findMany({
+    where: {
+      medical_user_id: medicalUserId,
+    },
+    include: {
+      // UBAH DARI 'appointments' MENJADI 'appointment'
+      appointment: { 
+        include: {
+          patient: true, // Untuk mengambil data pasien jika slot sudah di-book
+        },
+      },
+    },
+    orderBy: {
+      start_time: 'asc',
+    },
+  });
 };
 
 /**
