@@ -102,7 +102,7 @@ export default function Signup({ onClose }){
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <input 
               type="text"
-              placeholder='First name' 
+              placeholder='First Name' 
               value={firstName} 
               onChange={(e) => {
                 setFirstName(e.target.value)
@@ -112,7 +112,7 @@ export default function Signup({ onClose }){
             />
             <input 
               type="text"
-              placeholder='Last name' 
+              placeholder='Last Name' 
               value={lastName} 
               onChange={(e) => {
                 setLastName(e.target.value)
@@ -148,7 +148,7 @@ export default function Signup({ onClose }){
 
           <input 
             type="text"
-            placeholder={`${role === 'doctor' ? 'Medical' : 'Professional'} License Number`} 
+            placeholder='License Number' 
             value={medicalLicense} 
             onChange={(e) => {
               setMedicalLicense(e.target.value)

@@ -1,7 +1,5 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { authAPI, saveAuth } from './utils/api'
-import { FcGoogle } from 'react-icons/fc'
-import { FaApple } from 'react-icons/fa'
 import logoNew from './assets/logo-new.png'
 import heroRight from './assets/auth-hero.jpg'
 
@@ -36,153 +34,32 @@ export default function SignIn({ onClose, onSuccess }) {
     setInfo('')
   }
 
-  const handleGoogleLogin = useCallback(async (response) => {
-    resetMessages()
-    setLoading(true)
 
-    try {
-      if (!response.credential) {
-        setError('Google login failed')
-        setLoading(false)
-        return
-      }
 
-      const result = await authAPI.googleLogin(response.credential)
 
-      if (result?.success && result?.data) {
-        const token = result.data.token
-        const user = result.data.user
 
-        if (!token) {
-          setError('Token tidak diterima dari server')
-          setLoading(false)
-          return
-        }
 
-        saveAuth(token, user)
-        onSuccess && onSuccess(user, token)
-      } else {
-        setError(result?.message || 'Google login gagal')
-        setLoading(false)
-      }
-    } catch (e) {
-      console.error('Google login error:', e)
-      setError(e.message || 'Terjadi kesalahan saat login dengan Google')
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    // Load Google Sign-In script
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    document.body.appendChild(script)
-
-    script.onload = () => {
-      if (window.google && window.google.accounts) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
-          callback: handleGoogleLogin,
-          ux_mode: 'popup',
-        })
-        
-        // Render button to container
-        const container = document.getElementById('google_signin_button')
-        if (container) {
-          try {
-            window.google.accounts.id.renderButton(container, {
-              type: 'standard',
-              size: 'large',
-              text: 'signin',
-              locale: 'id',
-            })
-          } catch (e) {
-            console.log('Button already rendered or error:', e)
-          }
-        }
-      }
-    }
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
-      }
-    }
-  }, [handleGoogleLogin])
-
-  const handleAppleLogin = useCallback(async () => {
-    resetMessages()
-    setLoading(true)
-
-    try {
-      if (!window.AppleID) {
-        setError('Apple Sign-In tidak tersedia di browser Anda')
-        setLoading(false)
-        return
-      }
-
-      window.AppleID.auth.init({
-        clientId: import.meta.env.VITE_APPLE_CLIENT_ID || 'YOUR_APPLE_CLIENT_ID',
-        teamId: import.meta.env.VITE_APPLE_TEAM_ID || 'YOUR_APPLE_TEAM_ID',
-        keyId: import.meta.env.VITE_APPLE_KEY_ID || 'YOUR_APPLE_KEY_ID',
-        redirectURI: window.location.origin,
-        usePopup: true,
-      })
-
-      const response = await window.AppleID.auth.signIn()
-
-      if (response && response.authorization && response.authorization.id_token) {
-        const result = await authAPI.appleLogin(response.authorization.id_token)
-
-        if (result?.success && result?.data) {
-          const token = result.data.token
-          const user = result.data.user
-
-          if (!token) {
-            setError('Token tidak diterima dari server')
-            setLoading(false)
-            return
-          }
-
-          saveAuth(token, user)
-          onSuccess && onSuccess(user, token)
-        } else {
-          setError(result?.message || 'Apple login gagal')
-          setLoading(false)
-        }
-      } else {
-        setError('Apple login dibatalkan')
-        setLoading(false)
-      }
-    } catch (e) {
-      console.error('Apple login error:', e)
-      setError(e.message || 'Terjadi kesalahan saat login dengan Apple')
-      setLoading(false)
-    }
-  }, [])
 
   const handleAuth = async (e) => {
     e.preventDefault()
     resetMessages()
 
     if (!email || !password) {
-      setError('Email dan password wajib diisi')
+      setError('Email and password are required')
       return
     }
 
     if (mode === 'register') {
       if (!firstName || !lastName) {
-        setError('Nama depan dan belakang wajib diisi')
+        setError('First and last name are required')
         return
       }
       if (password !== confirmPassword) {
-        setError('Konfirmasi password tidak sesuai')
+        setError('Password confirmation does not match')
         return
       }
       if (!medicalLicense) {
-        setError('Nomor lisensi wajib diisi')
+        setError('License number is required')
         return
       }
     }
@@ -198,7 +75,7 @@ export default function SignIn({ onClose, onSuccess }) {
           const user = response.data.user
 
           if (!token) {
-            setError('Token tidak diterima dari server')
+            setError('Token not received from server')
             setLoading(false)
             return
           }
@@ -206,7 +83,7 @@ export default function SignIn({ onClose, onSuccess }) {
           saveAuth(token, user)
           onSuccess && onSuccess(user, token)
         } else {
-          setError(response?.message || 'Login gagal')
+          setError(response?.message || 'Login failed')
         }
       } else {
         const payload = {
@@ -222,15 +99,15 @@ export default function SignIn({ onClose, onSuccess }) {
         const response = await authAPI.register(payload)
 
         if (response?.success) {
-          setInfo('Registrasi berhasil. Silakan masuk menggunakan kredensial Anda.')
+          setInfo('Registration successful. Please sign in with your credentials.')
           setMode('signin')
           setConfirmPassword('')
         } else {
-          setError(response?.message || 'Registrasi gagal')
+          setError(response?.message || 'Registration failed')
         }
       }
     } catch (e) {
-      setError(e.message || 'Terjadi kesalahan. Coba lagi.')
+      setError(e.message || 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -263,17 +140,10 @@ export default function SignIn({ onClose, onSuccess }) {
             <p className="auth-lead">
               {mode === 'signin'
                 ? 'Enter your Email and Password'
-                : 'Buat akun untuk mengelola janji temu dokter di Doctor Stroke'}
+                : 'Create an account to manage doctor appointments at Doctor Stroke'}
             </p>
 
-            <div className="auth-social">
-              <div id="google_signin_button" style={{ display: 'flex', justifyContent: 'center' }} />
 
-              <button type="button" className="social-btn" onClick={handleAppleLogin} disabled={loading}>
-                <FaApple size={20} />
-                <span>{mode === 'signin' ? 'Sign in or Register with Apple' : 'Register with Apple'}</span>
-              </button>
-            </div>
 
             {error && <div className="auth-alert auth-alert--error">{error}</div>}
             {info && <div className="auth-alert auth-alert--info">{info}</div>}
@@ -282,7 +152,7 @@ export default function SignIn({ onClose, onSuccess }) {
               {mode === 'register' && (
                 <div className="auth-row">
                   <div className="field">
-                    <label>Nama Depan</label>
+                    <label>First Name</label>
                     <input
                       type="text"
                       value={firstName}
@@ -290,12 +160,12 @@ export default function SignIn({ onClose, onSuccess }) {
                         setFirstName(e.target.value)
                         resetMessages()
                       }}
-                      placeholder="Masukkan nama depan"
+                      placeholder="Enter first name"
                       disabled={loading}
                     />
                   </div>
                   <div className="field">
-                    <label>Nama Belakang</label>
+                    <label>Last Name</label>
                     <input
                       type="text"
                       value={lastName}
@@ -303,7 +173,7 @@ export default function SignIn({ onClose, onSuccess }) {
                         setLastName(e.target.value)
                         resetMessages()
                       }}
-                      placeholder="Masukkan nama belakang"
+                      placeholder="Enter last name"
                       disabled={loading}
                     />
                   </div>
@@ -343,7 +213,7 @@ export default function SignIn({ onClose, onSuccess }) {
               {mode === 'register' && (
                 <>
                   <div className="field">
-                    <label>Konfirmasi Password</label>
+                    <label>Confirm Password</label>
                     <input
                       type="password"
                       value={confirmPassword}
@@ -351,7 +221,7 @@ export default function SignIn({ onClose, onSuccess }) {
                         setConfirmPassword(e.target.value)
                         resetMessages()
                       }}
-                      placeholder="Masukkan ulang password"
+                      placeholder="Confirm password"
                       disabled={loading}
                       required
                     />
@@ -372,7 +242,7 @@ export default function SignIn({ onClose, onSuccess }) {
                           }}
                           disabled={loading}
                         >
-                          {r === 'doctor' ? 'Dokter' : 'Terapis'}
+                          {r === 'doctor' ? 'Doctor' : 'Therapist'}
                         </button>
                       ))}
                     </div>
@@ -380,7 +250,7 @@ export default function SignIn({ onClose, onSuccess }) {
 
                   <div className="auth-row">
                     <div className="field">
-                      <label>Nomor Lisensi</label>
+                      <label>License Number</label>
                       <input
                         type="text"
                         value={medicalLicense}
@@ -388,12 +258,12 @@ export default function SignIn({ onClose, onSuccess }) {
                           setMedicalLicense(e.target.value)
                           resetMessages()
                         }}
-                        placeholder="Masukkan nomor lisensi"
+                        placeholder="Enter license number"
                         disabled={loading}
                       />
                     </div>
                     <div className="field">
-                      <label>Spesialisasi</label>
+                      <label>Specialization</label>
                       <select
                         value={specialization}
                         onChange={(e) => {
@@ -413,17 +283,6 @@ export default function SignIn({ onClose, onSuccess }) {
                 </>
               )}
 
-              {mode === 'signin' && (
-                <div className="auth-extra">
-                  <span className="auth-extra__caption">Resend verification email or reset password?</span>
-                  <button type="button" className="auth-extra__link" onClick={() => alert('Silakan hubungi admin untuk verifikasi ulang.')}>
-                    Click Here
-                  </button>
-                </div>
-              )}
-
-              {mode === 'signin' && <div className="captcha-placeholder">reCAPTCHA placeholder</div>}
-
               <div className="auth-actions">
                 <button type="submit" className="primary-action" disabled={loading}>
                   {loading ? 'Processing...' : mode === 'signin' ? 'Sign in' : 'Register'}
@@ -432,7 +291,7 @@ export default function SignIn({ onClose, onSuccess }) {
             </form>
 
             <div className="auth-toggle">
-              <span>{mode === 'signin' ? "Belum punya akun?" : 'Sudah punya akun?'}</span>
+              <span>{mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}</span>
               <button type="button" className="auth-toggle__link" onClick={() => switchMode(mode === 'signin' ? 'register' : 'signin')}>
                 {mode === 'signin' ? 'Register' : 'Sign in'}
               </button>
@@ -440,7 +299,7 @@ export default function SignIn({ onClose, onSuccess }) {
           </div>
 
           <div className="auth-visual">
-            <div className="auth-visual__image" style={{ backgroundImage: `url(${heroRight})` }} aria-hidden="true" />
+            <img src={heroRight} alt="Recovery process" className="auth-visual__image" />
           </div>
         </div>
       </div>

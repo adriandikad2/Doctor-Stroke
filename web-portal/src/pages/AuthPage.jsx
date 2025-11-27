@@ -2,8 +2,6 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { authAPI } from '../utils/api';
-import { FcGoogle } from 'react-icons/fc';
-import { FaApple } from 'react-icons/fa';
 import logoNew from '../assets/logo-new.png'; 
 import authHero from '../assets/auth-hero.jpg'; 
 
@@ -86,10 +84,7 @@ const AuthPage = () => {
     }
   };
 
-  // Placeholder untuk Social Login (Backend belum siap)
-  const handleSocialPlaceholder = () => {
-    alert("Social login integration coming soon!");
-  };
+
 
   return (
     <div className="flex min-h-screen w-full bg-bg-primary">
@@ -111,21 +106,7 @@ const AuthPage = () => {
                 : 'Start your journey to better recovery tracking.'}
             </p>
 
-            {/* Tombol Social Login (Placeholder UI) */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <button onClick={handleSocialPlaceholder} className="flex-1 flex items-center justify-center gap-2 py-3 border border-border-color rounded-lg font-medium text-text-primary hover:bg-bg-secondary transition-colors">
-                    <FcGoogle size={24} /> <span>Google</span>
-                </button>
-                <button onClick={handleSocialPlaceholder} className="flex-1 flex items-center justify-center gap-2 py-3 border border-border-color rounded-lg font-medium text-text-primary hover:bg-bg-secondary transition-colors">
-                    <FaApple size={24} /> <span>Apple</span>
-                </button>
-            </div>
 
-            {/* Divider */}
-            <div className="relative flex items-center justify-center mb-8">
-                <div className="border-t border-border-color w-full absolute"></div>
-                <span className="bg-bg-primary px-4 text-text-secondary relative z-10">OR</span>
-            </div>
 
             {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
 
@@ -229,12 +210,11 @@ const AuthPage = () => {
       </div>
 
       {/* --- BAGIAN KANAN: GAMBAR HERO (Disembunyikan di mobile) --- */}
-      {/* Menggunakan 'bg-cover' dan 'bg-center' agar gambar mengisi area tanpa distorsi parah, sesuai desain referensi */}
       <div className="hidden md:block md:w-1/2 relative bg-bg-secondary overflow-hidden">
-        <div 
-            className="absolute inset-0 bg-cover bg-center z-0" 
-            style={{ backgroundImage: `url(${authHero})` }} 
+        <img 
+            src={authHero}
             alt="Recovery process"
+            className="w-full h-full object-cover"
         />
         {/* Overlay Gradient agar teks terbaca */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end p-16">
