@@ -96,6 +96,38 @@ export const handleBookAppointment = async (req, res) => {
 };
 
 /**
+ * Handle creating a direct appointment (doctor/therapist only)
+ * @param {object} req - Express request object with user and body
+ * @param {object} res - Express response object
+ */
+export const handleDirectBooking = async (req, res) => {
+  try {
+    const appointmentData = req.body;
+    const user = req.user;
+
+    if (!appointmentData.patient_id || !appointmentData.start_time || !appointmentData.end_time) {
+      return res.status(400).json({
+        success: false,
+        message: 'patient_id, start_time, dan end_time diperlukan',
+      });
+    }
+
+    const newAppointment = await appointmentService.createDirectAppointment(appointmentData, user);
+
+    res.status(201).json({
+      success: true,
+      message: 'Janji temu langsung berhasil dibuat',
+      data: newAppointment,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal membuat janji temu langsung',
+    });
+  }
+};
+
+/**
  * Handle getting appointments for a patient
  * @param {object} req - Express request object with params
  * @param {object} res - Express response object
