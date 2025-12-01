@@ -5,3 +5,4 @@ npm-debug.log
 *.md
 .vscode
 .idea
+dist

@@ -8,7 +8,6 @@ import Medications from './components/Medications';
 import Progress from './components/Progress';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './styles.css';
-import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
