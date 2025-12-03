@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { patientAPI, appointmentAPI } from './utils/api';
+import { patientAPI, appointmentAPI, logAPI } from './utils/api';
 import PrescriptionEntry from './components/PrescriptionEntry';
-import AppointmentBooking from './components/AppointmentBooking';
 import MedicalHistoryLogger from './components/MedicalHistoryLogger';
 
 export default function Dashboard({ user }) {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [medicalHistory, setMedicalHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -48,7 +48,12 @@ export default function Dashboard({ user }) {
           
           if (appointmentsResponse.success) {
             const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
-            setAppointments(appointmentsList);
+            // Filter upcoming appointments only
+            const upcomingAppointments = appointmentsList.filter(apt => {
+              const aptDate = new Date(apt.slot?.start_time || apt.created_at);
+              return aptDate >= new Date();
+            });
+            setAppointments(upcomingAppointments);
           } else {
             setAppointments([]);
           }
@@ -67,6 +72,48 @@ export default function Dashboard({ user }) {
 
     fetchDashboardData();
   }, [refreshTrigger]);
+
+  const fetchMedicalHistory = async () => {
+    if (!selectedPatient?.patient_id) return;
+    try {
+      const response = await logAPI.snapshot.getByPatientId(selectedPatient.patient_id);
+      if (response.success && response.data) {
+        setMedicalHistory(response.data);
+      } else {
+        setMedicalHistory([]);
+      }
+    } catch (err) {
+      console.error('Error fetching medical history:', err);
+      setMedicalHistory([]);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPatient?.patient_id) {
+      fetchMedicalHistory();
+    }
+  }, [selectedPatient, refreshTrigger]);
+
+  // Polling to check for appointment updates every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const appointmentsResponse = await appointmentAPI.getMyAppointments();
+        if (appointmentsResponse.success) {
+          const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+          const upcomingAppointments = appointmentsList.filter(apt => {
+            const aptDate = new Date(apt.slot?.start_time || apt.created_at);
+            return aptDate >= new Date();
+          });
+          setAppointments(upcomingAppointments);
+        }
+      } catch (err) {
+        console.error('Error polling appointments:', err);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -506,14 +553,6 @@ export default function Dashboard({ user }) {
             />
           )}
 
-          {/* Appointment Booking Section - For Doctors/Therapists */}
-          {(user?.role === 'doctor' || user?.role === 'therapist') && (
-            <AppointmentBooking 
-              user={user}
-              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
-            />
-          )}
-
           {/* Vital Signs Tracker - For Doctors/Therapists */}
           {(user?.role === 'doctor' || user?.role === 'therapist') && (
             <MedicalHistoryLogger 
@@ -566,12 +605,39 @@ export default function Dashboard({ user }) {
             {/* Medical History Card */}
             <div className="card">
               <h3><span className="card-icon">📋</span>Medical History</h3>
-              {selectedPatient.medical_history ? (
-                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
-                  {selectedPatient.medical_history}
-                </p>
+              {medicalHistory && medicalHistory.length > 0 ? (
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  {medicalHistory.slice(0, 3).map((record, idx) => (
+                    <div key={record.snapshot_id || idx} style={{
+                      padding: '8px',
+                      background: 'var(--color-bg)',
+                      borderRadius: '6px',
+                      borderLeft: '3px solid var(--teal)',
+                      fontSize: '12px'
+                    }}>
+                      <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-text)' }}>
+                        {new Date(record.recorded_at || record.created_at).toLocaleDateString()}
+                      </p>
+                      {record.blood_pressure_systolic && (
+                        <p style={{ margin: '0 0 2px 0', color: 'var(--color-muted-2)' }}>
+                          🩸 BP: {record.blood_pressure_systolic}/{record.blood_pressure_diastolic} mmHg
+                        </p>
+                      )}
+                      {record.exercise_completed && (
+                        <p style={{ margin: '0 0 2px 0', color: 'var(--green)' }}>
+                          ✓ Exercise completed
+                        </p>
+                      )}
+                      {record.notes && (
+                        <p style={{ margin: 0, color: 'var(--color-muted-2)' }}>
+                          📝 {record.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No medical history recorded</p>
+                <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No medical history recorded. Use 🩺 Vital Signs Tracker to add records.</p>
               )}
             </div>
           </div>

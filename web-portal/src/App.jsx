@@ -89,11 +89,20 @@ export default function App() {
           <>
             <section className="hero-card">
               <div className="hero-text">
-                <h2>Clinician Portal — Actionable patient insights</h2>
-                <p>Access structured reports, therapy schedules, and medication adherence data to support timely clinical decisions.</p>
+                <h2>
+                  {isLoggedIn 
+                    ? `Hello dr. ${user?.first_name || user?.firstName || ''} ${user?.last_name || user?.lastName || ''}`.trim() 
+                    : 'Clinician Portal — Actionable patient insights'}
+                </h2>
+                <p>
+                  {isLoggedIn 
+                    ? 'Welcome to Doctor Portal. Access structured reports, therapy schedules, and medication adherence data to support timely clinical decisions.' 
+                    : 'Access structured reports, therapy schedules, and medication adherence data to support timely clinical decisions.'}
+                </p>
                 <div className="hero-ctas">
-                  <button className="btn-primary" onClick={handleRequestAccess}>Request Access</button>
-                  <a className="btn-ghost" href="#learn">Learn more</a>
+                  <button className="btn-primary" onClick={handleRequestAccess}>
+                    {isLoggedIn ? 'Go to Dashboard' : 'Request Access'}
+                  </button>
                 </div>
               </div>
               <div className="hero-side">

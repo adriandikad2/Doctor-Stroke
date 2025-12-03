@@ -112,6 +112,20 @@ export const loginUser = async (email, password) => {
   };
   const token = createToken(payload);
 
+  // Get profile data based on role
+  let profileData = {};
+  switch (user.role) {
+    case 'doctor':
+      profileData = user.doctor_profile || {};
+      break;
+    case 'therapist':
+      profileData = user.therapist_profile || {};
+      break;
+    case 'family':
+      profileData = user.family_profile || {};
+      break;
+  }
+
   // Return token and user info (without password hash)
   return {
     token,
@@ -119,6 +133,9 @@ export const loginUser = async (email, password) => {
       user_id: user.user_id,
       email: user.email,
       role: user.role,
+      first_name: profileData.first_name || '',
+      last_name: profileData.last_name || '',
+      ...profileData,
     },
   };
 };

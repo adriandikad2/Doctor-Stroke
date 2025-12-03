@@ -80,14 +80,8 @@ export default function Scheduler({ user }){
 
     try {
       const response = await appointmentAPI.createSlot({
-<<<<<<< HEAD
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
-        appointment_type: appointmentType
-=======
         start_time: start.toISOString(),
         end_time: end.toISOString()
->>>>>>> af5ad3914129dacc9a4d1276ccfde98d9512f42f
       })
 
       if (response.success) {

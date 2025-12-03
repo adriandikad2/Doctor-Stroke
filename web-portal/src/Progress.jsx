@@ -10,6 +10,14 @@ const COLORS = {
   soft: '#E0BEE6'
 };
 
+// Mock recovery timeline data
+const MOCK_RECOVERY_TIMELINE = [
+  { phase: 'Acute Phase', duration: 'Week 1-2', status: 'completed', progress: 100 },
+  { phase: 'Early Recovery', duration: 'Week 3-6', status: 'completed', progress: 100 },
+  { phase: 'Active Rehabilitation', duration: 'Week 7-12', status: 'in-progress', progress: 65 },
+  { phase: 'Community Integration', duration: 'Week 13+', status: 'not-started', progress: 0 }
+];
+
 function BarChart({ data, dataKey, maxValue = 100, color = COLORS.blue }) {
   return (
     <div style={{
@@ -316,10 +324,10 @@ export default function Progress() {
   };
 
   const tabs = [
-    { id: 'adherence', label: '💊 Medication Adherence', icon: '💊' },
-    { id: 'therapy', label: '🏥 Therapy Sessions', icon: '🏥' },
-    { id: 'vitals', label: '❤️ Vital Signs', icon: '❤️' },
-    { id: 'timeline', label: '📋 Recovery Timeline', icon: '📋' }
+    { id: 'adherence', label: 'Medication Adherence', icon: '💊' },
+    { id: 'therapy', label: 'Therapy Sessions', icon: '🏥' },
+    { id: 'vitals', label: 'Vital Signs', icon: '❤️' },
+    { id: 'timeline', label: 'Recovery Timeline', icon: '📋' }
   ];
 
   return (
@@ -478,6 +486,26 @@ export default function Progress() {
           <p>Comprehensive overview of patient recovery and treatment adherence</p>
         </div>
 
+        {/* Info Card */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(131, 133, 204, 0.1) 0%, rgba(121, 174, 179, 0.1) 100%)',
+          padding: '16px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          border: '1px solid var(--color-border)',
+          borderLeft: '4px solid var(--primary)'
+        }}>
+          <p style={{
+            margin: '0',
+            fontSize: '13px',
+            color: 'var(--color-text)',
+            lineHeight: '1.6'
+          }}>
+            <strong>💡 Tip:</strong> This dashboard displays real-time data from your patient's clinical activities. 
+            To populate the charts below, ensure you're logging vitals, recording therapy sessions, and tracking medication adherence in the <strong>Dashboard</strong>.
+          </p>
+        </div>
+
         {error && (
           <div style={{
             background: '#FEE2E2',
@@ -583,8 +611,28 @@ export default function Progress() {
                   </div>
                 </>
               ) : (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
-                  <p>No adherence data available yet</p>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-muted-2)', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>📊 No adherence data available yet</p>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '12px', lineHeight: '1.6' }}>
+                    To see adherence graphs here, add medication logs to the patient via the <strong>Medication Management</strong> or <strong>Prescription</strong> sections in Dashboard.
+                  </p>
+                  <div style={{ 
+                    background: 'var(--color-card)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    marginTop: '12px',
+                    borderLeft: '3px solid var(--blue)',
+                    textAlign: 'left'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>💡 How to see sample data:</p>
+                    <ol style={{ margin: '0', paddingLeft: '16px', lineHeight: '1.8' }}>
+                      <li>Go to <strong>Dashboard</strong></li>
+                      <li>Create prescriptions or medications for your patient</li>
+                      <li>Track medication adherence logs over multiple days</li>
+                      <li>Return here to see the adherence graph populate</li>
+                    </ol>
+                  </div>
                 </div>
               )}
             </div>
@@ -615,8 +663,30 @@ export default function Progress() {
                   ))}
                 </div>
               ) : (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
-                  <p>No progress logs available</p>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-muted-2)', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>🏥 No therapy progress logs yet</p>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '12px', lineHeight: '1.6' }}>
+                    Progress logs track your patient's therapy sessions and recovery milestones.
+                  </p>
+                  <div style={{ 
+                    background: 'var(--color-card)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    marginTop: '12px',
+                    borderLeft: '3px solid var(--blue)',
+                    textAlign: 'left'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>💡 How to add progress logs:</p>
+                    <ol style={{ margin: '0', paddingLeft: '16px', lineHeight: '1.8' }}>
+                      <li>Go to <strong>Dashboard</strong> and select your patient</li>
+                      <li>Look for <strong>Progress Management</strong> or therapy section</li>
+                      <li>Add a new progress note/log entry</li>
+                      <li>Include session date, therapy type, and patient feedback</li>
+                      <li>Save the entry</li>
+                      <li>Progress entries will appear here automatically</li>
+                    </ol>
+                  </div>
                 </div>
               )}
             </div>
@@ -652,7 +722,7 @@ export default function Progress() {
                         )}
                         {snapshot.mobility_score && (
                           <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
-                            🚶 Mobility: {snapshot.mobility_score}%
+                            � Mobility: {snapshot.mobility_score}%
                           </p>
                         )}
                       </div>
@@ -660,8 +730,31 @@ export default function Progress() {
                   ))}
                 </div>
               ) : (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
-                  <p>No snapshot data available</p>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--color-muted-2)', background: 'var(--color-bg)', borderRadius: '8px' }}>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>❤️ No vital signs data yet</p>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '12px', lineHeight: '1.6' }}>
+                    Vital signs snapshots are automatically recorded when you add data via the <strong>🩺 Vital Signs Tracker</strong> in the Dashboard.
+                  </p>
+                  <div style={{ 
+                    background: 'var(--color-card)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    marginTop: '12px',
+                    borderLeft: '3px solid var(--teal)',
+                    textAlign: 'left'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>💡 How to populate vital signs:</p>
+                    <ol style={{ margin: '0', paddingLeft: '16px', lineHeight: '1.8' }}>
+                      <li>Go to <strong>Dashboard</strong> and select your patient</li>
+                      <li>Scroll to <strong>🩺 Vital Signs Tracker</strong></li>
+                      <li>Click <strong>➕ Record Vitals</strong></li>
+                      <li>Enter blood pressure readings (e.g., 120/80 mmHg)</li>
+                      <li>Optionally check "Exercise completed" and add notes</li>
+                      <li>Click <strong>💾 Save</strong></li>
+                      <li>Record data over several days to see graphs here</li>
+                    </ol>
+                  </div>
                 </div>
               )}
             </div>
