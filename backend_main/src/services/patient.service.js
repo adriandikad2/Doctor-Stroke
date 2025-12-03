@@ -49,6 +49,13 @@ export const createNewPatient = async (patientData, user) => {
     const patient = await patientRepository.createPatientProfile(
       {
         ...patientData,
+        // FIX: Convert the string to a Date object here
+        date_of_birth: new Date(patientData.date_of_birth),
+        
+        // FIX 2: Convert Gender to Uppercase (male -> MALE)
+        // This ensures it matches the 'gender_enum' in your database
+        gender: patientData.gender ? patientData.gender.toUpperCase() : undefined,
+
         unique_code,
       },
       tx

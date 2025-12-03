@@ -1,6 +1,285 @@
 import React, { useState, useEffect } from 'react';
 import { patientAPI, nutritionAPI, logAPI } from './utils/api';
 
+// Calendar component for viewing logged meals by date
+const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
+  const [calendarData, setCalendarData] = useState({});
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [loading, setLoading] = useState(false);
+
+  // Function to load meal data for the month
+  useEffect(() => {
+    const loadCalendarData = async () => {
+      if (!patientId || !authToken) return;
+      
+      setLoading(true);
+      try {
+        // Get start and end of month for query
+        const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        
+        const response = await fetch(`/api/logs/meal/${patientId}?start_date=${startOfMonth.toISOString().split('T')[0]}&end_date=${endOfMonth.toISOString().split('T')[0]}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.data) {
+          // Group meals by date
+          const mealsByDate = {};
+          data.data.forEach(meal => {
+            const date = meal.logged_for.split('T')[0]; // Extract YYYY-MM-DD
+            if (!mealsByDate[date]) {
+              mealsByDate[date] = [];
+            }
+            mealsByDate[date].push(meal);
+          });
+          
+          setCalendarData(mealsByDate);
+        }
+      } catch (error) {
+        console.error('Error loading calendar data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCalendarData();
+  }, [patientId, authToken, currentMonth]);
+
+  // Navigation functions for calendar
+  const goToPreviousMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  // Get days in month
+  const getDaysInMonth = (year, month) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // Get first day of month (0 = Sunday, 1 = Monday, etc.)
+  const getFirstDayOfMonth = (year, month) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  // Generate calendar days
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDayOfMonth = getFirstDayOfMonth(year, month);
+    
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(null);
+    }
+    
+    // Add cells for each day of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      days.push(dateStr);
+    }
+    
+    return days;
+  };
+
+  const days = generateCalendarDays();
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  return (
+    <div className="meal-calendar">
+      <style>{`
+        .meal-calendar {
+          background: var(--color-card);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          box-shadow: 0 12px 30px rgba(14, 30, 45, 0.06);
+          border: 1px solid var(--color-border);
+        }
+        
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        
+        .month-navigation {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .nav-button {
+          background: var(--color-card);
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          padding: 8px 12px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+        
+        .nav-button:hover {
+          background: var(--primary);
+          color: white;
+        }
+        
+        .current-month {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--primary);
+        }
+        
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+        
+        .weekday-header {
+          text-align: center;
+          padding: 8px;
+          font-weight: 600;
+          color: var(--color-muted-2);
+          font-size: 12px;
+        }
+        
+        .calendar-day {
+          aspect-ratio: 1/1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          position: relative;
+          min-height: 60px;
+        }
+        
+        .calendar-day.empty {
+          background: transparent;
+          cursor: default;
+        }
+        
+        .calendar-day.has-meals {
+          background: var(--teal-light);
+          border: 1px solid var(--teal);
+        }
+        
+        .calendar-day.has-meals:hover {
+          background: var(--teal);
+          color: white;
+        }
+        
+        .calendar-day.selected {
+          background: var(--primary);
+          color: white;
+        }
+        
+        .day-number {
+          font-weight: 600;
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+        
+        .meal-indicator {
+          display: flex;
+          gap: 2px;
+          margin-top: 4px;
+        }
+        
+        .meal-dot {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: var(--teal);
+        }
+        
+        .loading-calendar {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 40px;
+        }
+      `}</style>
+      
+      <div className="calendar-header">
+        <div className="month-navigation">
+          <button className="nav-button" onClick={goToPreviousMonth}>←</button>
+          <div className="current-month">
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </div>
+          <button className="nav-button" onClick={goToNextMonth}>→</button>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div className="loading-calendar">
+          <div className="spinner">Loading calendar...</div>
+        </div>
+      ) : (
+        <>
+          <div className="calendar-grid">
+            {weekdays.map(day => (
+              <div key={day} className="weekday-header">{day}</div>
+            ))}
+            
+            {days.map((dateStr, index) => {
+              if (!dateStr) {
+                return <div key={index} className="calendar-day empty"></div>;
+              }
+              
+              const hasMeals = calendarData[dateStr] && calendarData[dateStr].length > 0;
+              const isToday = dateStr === new Date().toISOString().split('T')[0];
+              
+              return (
+                <div
+                  key={dateStr}
+                  className={`calendar-day ${hasMeals ? 'has-meals' : ''} ${isToday ? 'today' : ''}`}
+                  onClick={() => onSelectDate && onSelectDate(dateStr)}
+                  title={hasMeals ? `Meals logged on ${dateStr}` : `No meals on ${dateStr}`}
+                >
+                  <div className="day-number">
+                    {parseInt(dateStr.split('-')[2])}
+                  </div>
+                  {hasMeals && (
+                    <div className="meal-indicator">
+                      {calendarData[dateStr].slice(0, 3).map((meal, idx) => (
+                        <div key={idx} className="meal-dot" title={`${meal.meal_type}: ${meal.foods?.join(', ')}`}></div>
+                      ))}
+                      {calendarData[dateStr].length > 3 && (
+                        <div className="meal-dot" style={{ backgroundColor: '#8385CC' }} title={`+${calendarData[dateStr].length - 3} more meals`}></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export default function DietManagement({ user }) {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
