@@ -233,7 +233,7 @@ function LinkPatientModal({ onClose, onSuccess }) {
         <form onSubmit={handleSubmit}>
           <input 
             type="text"
-            placeholder='e.g., PASIEN-AX17B9' 
+            placeholder='e.g., PASIEN-ABCDEF' 
             value={uniqueCode} 
             onChange={(e) => {
               setUniqueCode(e.target.value)

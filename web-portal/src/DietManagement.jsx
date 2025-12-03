@@ -290,14 +290,14 @@ export default function DietManagement({ user }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // State untuk form update nutrition profile
+  // State for form update nutrition profile
   const [profileForm, setProfileForm] = useState({
     sodium_limit_mg: '',
     fiber_target_g: '',
     calorie_target_max: ''
   });
   
-  // State untuk form log meal
+  // State for form log meal
   const [mealForm, setMealForm] = useState({
     meal_type: 'breakfast',
     foods_consumed: '',
@@ -306,7 +306,7 @@ export default function DietManagement({ user }) {
     fiber_g: ''
   });
 
-  // 1. Fetch patients saat komponen mount
+  // 1. Fetch patients when component mounts
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -335,7 +335,7 @@ export default function DietManagement({ user }) {
     fetchPatients();
   }, []);
 
-  // 2. Fetch nutrition data saat patient dipilih
+  // 2. Fetch nutrition data when patient is selected
   useEffect(() => {
     if (!selectedPatient?.patient_id) {
       setProfile(null);
@@ -374,8 +374,8 @@ export default function DietManagement({ user }) {
 
     fetchNutritionData();
   }, [selectedPatient]);
-  
-  // Handler untuk update profil nutrisi
+
+  // Handler for updating nutrition profile
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     
@@ -407,7 +407,7 @@ export default function DietManagement({ user }) {
     }
   };
   
-  // Handler untuk log meal
+  // Handler for logging meal
   const handleLogMeal = async (e) => {
     e.preventDefault();
     
@@ -694,9 +694,11 @@ export default function DietManagement({ user }) {
         }
       `}</style>
 
-      <h3>🥗 Nutrition Management</h3>
+      <h3>Nutrition Management</h3>
       
-      {error && <div className="error-message">❌ Error: {error}</div>}
+      {error && (
+        <div className="error-message">❌ {error}</div>
+      )}
       
       <div className="patient-selector">
         <label htmlFor="patient-select">🏥 Select Patient</label>
@@ -712,7 +714,7 @@ export default function DietManagement({ user }) {
           >
             <option value="">-- Select Patient --</option>
             {patients.map(p => (
-              <option key={p.patient_id} value={p.patient_id}>{p.name}</option>
+              <option key={p.patient_id} value={p.patient_id}>{p.name} (ID: {p.unique_code})</option>
             ))}
           </select>
           {loading && <div className="loading-spinner"></div>}
@@ -829,6 +831,13 @@ export default function DietManagement({ user }) {
                 </button>
               </form>
             </div>
+            
+            {/* Add the Meal Calendar */}
+            <MealCalendar 
+              patientId={selectedPatient.patient_id} 
+              authToken={localStorage.getItem('authToken')}
+              onSelectDate={(date) => console.log('Selected date:', date)}
+            />
           </div>
 
           {/* Right Panel: Data & Plans */}
