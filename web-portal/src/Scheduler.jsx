@@ -6,6 +6,7 @@ export default function Scheduler({ user }){
   const [selectedPatient, setSelectedPatient] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [appointmentType, setAppointmentType] = useState('consultation')
   const [loading, setLoading] = useState(false)
   const [mySlots, setMySlots] = useState([])
   const [appointments, setAppointments] = useState([])
@@ -79,14 +80,21 @@ export default function Scheduler({ user }){
 
     try {
       const response = await appointmentAPI.createSlot({
+<<<<<<< HEAD
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+        appointment_type: appointmentType
+=======
         start_time: start.toISOString(),
         end_time: end.toISOString()
+>>>>>>> af5ad3914129dacc9a4d1276ccfde98d9512f42f
       })
 
       if (response.success) {
         setSuccess('✓ Availability slot created successfully!')
         setStartTime('')
         setEndTime('')
+        setAppointmentType('consultation')
         
         // Refresh slots
         const slotsResp = await appointmentAPI.getMySlots()
@@ -130,6 +138,22 @@ export default function Scheduler({ user }){
         <div className="form-card">
           <h4 style={{ marginTop: 0, marginBottom: '16px' }}>Create Availability Slot</h4>
           <div style={{ display:'grid', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Appointment Type</label>
+              <select 
+                value={appointmentType} 
+                onChange={(e)=> setAppointmentType(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="consultation">Consultation</option>
+                <option value="therapy">Therapy</option>
+                <option value="follow-up">Follow-up</option>
+                <option value="assessment">Assessment</option>
+                <option value="rehabilitation">Rehabilitation</option>
+                <option value="checkup">Checkup</option>
+              </select>
+            </div>
+
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Start Time</label>
               <input 
@@ -180,6 +204,9 @@ export default function Scheduler({ user }){
                 <li key={slot.slot_id} style={{ padding: 8, borderBottom:'1px solid var(--color-border)', fontSize: '12px' }}>
                   <div style={{ fontWeight: 600 }}>
                     {new Date(slot.start_time).toLocaleTimeString()}
+                  </div>
+                  <div style={{ color:'var(--color-muted-2)', fontSize: '11px' }}>
+                    {slot.appointment_type || 'appointment'}
                   </div>
                   <div style={{ color:'var(--color-muted-2)' }}>
                     Status: {slot.is_booked ? '✓ Booked' : '○ Available'}
