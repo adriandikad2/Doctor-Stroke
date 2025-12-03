@@ -6,6 +6,7 @@ const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
   const [calendarData, setCalendarData] = useState({});
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   // Function to load meal data for the month
   useEffect(() => {
@@ -194,6 +195,24 @@ const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
           color: white;
         }
         
+        .selected-date-meals {
+          background: var(--color-card);
+          border-radius: 12px;
+          padding: 20px;
+          margin-top: 20px;
+          border: 1px solid var(--color-border);
+        }
+        
+        .selected-date-meals h4 {
+          margin: 0 0 16px 0;
+          color: var(--primary);
+          font-size: 16px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
         .day-number {
           font-weight: 600;
           font-size: 14px;
@@ -253,8 +272,11 @@ const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
               return (
                 <div
                   key={dateStr}
-                  className={`calendar-day ${hasMeals ? 'has-meals' : ''} ${isToday ? 'today' : ''}`}
-                  onClick={() => onSelectDate && onSelectDate(dateStr)}
+                  className={`calendar-day ${hasMeals ? 'has-meals' : ''} ${isToday ? 'today' : ''} ${selectedDate === dateStr ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedDate(dateStr);
+                    onSelectDate && onSelectDate(dateStr);
+                  }}
                   title={hasMeals ? `Meals logged on ${dateStr}` : `No meals on ${dateStr}`}
                 >
                   <div className="day-number">
@@ -274,6 +296,45 @@ const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
               );
             })}
           </div>
+          
+          {/* Display meals for selected date */}
+          {selectedDate && calendarData[selectedDate] && calendarData[selectedDate].length > 0 && (
+            <div className="selected-date-meals">
+              <h4>🍽️ Meals for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {calendarData[selectedDate].map((meal, idx) => (
+                  <div key={idx} style={{
+                    padding: '12px',
+                    backgroundColor: 'var(--color-bg)',
+                    borderRadius: '8px',
+                    borderLeft: '4px solid var(--teal)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: '600', color: 'var(--color-text)', marginBottom: '4px' }}>
+                        {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} 🍽️
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-muted-2)' }}>
+                        Foods: {Array.isArray(meal.foods) ? meal.foods.join(', ') : meal.foods}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-muted-2)', marginTop: '4px' }}>
+                        ⚡ {meal.calories || 0} kcal • 🧂 {meal.sodium_mg || 0}mg Na • 🌾 {meal.fiber_g || 0}g Fiber
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {selectedDate && calendarData[selectedDate] && calendarData[selectedDate].length === 0 && (
+            <div className="selected-date-meals">
+              <h4>🍽️ Meals for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+              <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', padding: '16px 0' }}>No meals logged for this date.</p>
+            </div>
+          )}
         </>
       )}
     </div>

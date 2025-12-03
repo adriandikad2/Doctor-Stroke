@@ -13,7 +13,6 @@ const Patients = () => {
     date_of_birth: '',
     gender: '',
     medical_history: '',
-    cancer_type: '',
     documents: []
   });
   const [uploading, setUploading] = useState(false);
@@ -119,7 +118,6 @@ const Patients = () => {
           date_of_birth: '',
           gender: '',
           medical_history: '',
-          cancer_type: '',
           documents: []
         });
       } else {
@@ -674,30 +672,6 @@ const Patients = () => {
                   <option value="other">Other</option>
                 </select>
               </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '4px',
-                  fontSize: '14px',
-                  color: '#334155',
-                  fontWeight: '500'
-                }}>Cancer Type</label>
-                <input
-                  type="text"
-                  value={newPatient.cancer_type}
-                  onChange={(e) => setNewPatient(prev => ({ ...prev, cancer_type: e.target.value }))}
-                  placeholder="e.g., Breast Cancer, Lung Cancer"
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
               <div style={{ marginBottom: '16px' }}>
                 <label style={{
                   display: 'block',

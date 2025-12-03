@@ -80,7 +80,6 @@ model patient_profiles {
   unique_code     String    @unique @db.VarChar(20) // Format: PASIEN-XXXXXX
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
-  cancer_type String?
   documents   Json?
 
   // --- Relasi (Hal-hal yang "Dimiliki" Pasien) ---
