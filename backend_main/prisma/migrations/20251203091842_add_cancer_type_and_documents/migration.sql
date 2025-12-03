@@ -1,3 +1,2 @@
 -- AlterTable
-ALTER TABLE "patient_profiles" ADD COLUMN     "cancer_type" TEXT,
-ADD COLUMN     "documents" JSONB;
+ALTER TABLE "patient_profiles" ADD COLUMN     "documents" JSONB;
