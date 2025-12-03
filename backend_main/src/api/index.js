@@ -7,6 +7,7 @@ import nutritionRoutes from './nutrition.routes.js';
 import logRoutes from './log.routes.js';
 import careTeamRoutes from './care_team.routes.js';
 import userRoutes from './user.routes.js';
+import insightRoutes from './insight.routes.js';
 
 const router = express.Router();
 
@@ -44,6 +45,11 @@ router.use('/logs', logRoutes);
  * Mount care team routes
  */
 router.use('/care-team', careTeamRoutes);
+
+/**
+ * Mount insight routes
+ */
+router.use('/insights', insightRoutes);
 
 /**
  * Mount user routes

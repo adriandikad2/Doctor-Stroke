@@ -12,6 +12,11 @@ RUN npm ci --only=production
 # Copy source code
 COPY . .
 
+# Generate Prisma client
+# We need to set a temporary DATABASE_URL for the generation step
+ENV DATABASE_URL="postgresql://temp:temp@temp:5432/temp"
+RUN npx prisma generate
+
 # Expose port
 EXPOSE 3001
 

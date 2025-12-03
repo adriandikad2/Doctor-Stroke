@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTheme } from './ThemeContext';
+import logoNew from './assets/logo-new.png';
 
-export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) {
+export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignOut, onLinkPatient }) {
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -42,25 +43,28 @@ export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) 
           opacity: 0.8;
         }
 
-        .brand-mark {
-          width: 20px;
-          height: 20px;
-          background: linear-gradient(135deg, var(--primary), var(--blue));
-          border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(131, 133, 204, 0.3);
-          animation: float 3s ease-in-out infinite;
+        .brand img {
+          width: 42px;
+          height: 42px;
+          object-fit: contain;
+          border-radius: 8px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.08);
         }
 
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+        .brand-title {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.1;
         }
 
-        .app-header h1 {
-          margin: 0;
-          font-size: 20px;
+        .brand-title strong {
           color: var(--primary);
-          font-weight: 700;
+          font-size: 16px;
+        }
+
+        .brand-title span {
+          color: var(--color-muted);
+          font-size: 12px;
         }
 
         nav {
@@ -193,8 +197,11 @@ export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) 
       `}</style>
 
       <div className="brand" onClick={() => { onNavigate('home'); setMobileMenuOpen(false); }}>
-        <div className="brand-mark" />
-        <h1>Doctor Stroke</h1>
+        <img src={logoNew} alt="Doctor Stroke Logo" />
+        <div className="brand-title">
+          <strong>Doctor Stroke</strong>
+          <span>Post-Stroke Care</span>
+        </div>
       </div>
 
       <nav className={mobileMenuOpen ? 'mobile-open' : ''}>
@@ -211,6 +218,13 @@ export default function Navbar({ isLoggedIn, onNavigate, onSignIn, onSignOut }) 
               onClick={() => { onNavigate('dashboard'); setMobileMenuOpen(false); }}
             >
               📊 Dashboard
+            </button>
+            <button 
+              className="btn-ghost" 
+              onClick={() => { onLinkPatient && onLinkPatient(); setMobileMenuOpen(false); }}
+              title="Link a patient using unique code"
+            >
+              🔗 Link Patient
             </button>
             <button 
               className="btn-ghost" 

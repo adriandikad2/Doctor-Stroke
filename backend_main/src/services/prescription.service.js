@@ -2,10 +2,11 @@ import * as prescriptionRepository from '../repositories/prescription.repository
 
 /**
  * Add a new prescription (doctor only)
- * @param {object} prescriptionData - Prescription data
+ * Performs clinical safety checks for medication interactions
+ * @param {object} prescriptionData - Prescription data { patient_id, medication_name, dosage, frequency, duration, instructions }
  * @param {object} user - Authenticated user { user_id, role }
  * @returns {Promise<object>} - The created prescription
- * @throws {Error} - If user is not a doctor
+ * @throws {Error} - If user is not a doctor or interaction detected
  */
 export const addNewPrescription = async (prescriptionData, user) => {
   // Only doctors can create prescriptions
@@ -13,6 +14,25 @@ export const addNewPrescription = async (prescriptionData, user) => {
     throw new Error('Hanya dokter yang dapat membuat resep');
   }
 
+  const { patient_id, medication_name } = prescriptionData;
+
+  // Clinical Safety Check: Check for medication interactions
+  const activePrescriptions = await prescriptionRepository.findActivePrescriptions(patient_id);
+
+  for (const activePrescription of activePrescriptions) {
+    const interaction = await prescriptionRepository.findInteraction(
+      medication_name,
+      activePrescription.medication_name
+    );
+
+    if (interaction) {
+      throw new Error(
+        `BAHAYA: Interaksi terdeteksi antara ${medication_name} dan ${activePrescription.medication_name} (Severity: ${interaction.severity}). Resep ditolak.`
+      );
+    }
+  }
+
+  // If safe, proceed to create prescription
   return prescriptionRepository.createPrescription({
     ...prescriptionData,
     doctor_user_id: user.user_id,

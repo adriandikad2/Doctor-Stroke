@@ -55,6 +55,69 @@ export const bookAppointment = async (slotId, patientId, user) => {
 };
 
 /**
+ * Create a direct appointment (doctor/therapist only)
+ * Bypasses the booking slot system for doctors/therapists to directly create appointments
+ * @param {object} data - Appointment data { patient_id, start_time, end_time, notes }
+ * @param {object} user - Authenticated user { user_id, role }
+ * @returns {Promise<object>} - The created appointment
+ * @throws {Error} - If user is family or not authorized, or missing required data
+ */
+export const createDirectAppointment = async (data, user) => {
+  // Only doctors and therapists can create direct appointments
+  if (user.role === 'family') {
+    throw new Error('Keluarga harus menggunakan sistem booking slot');
+  }
+
+  const { patient_id, start_time, end_time, notes } = data;
+
+  // Validate required fields
+  if (!patient_id || !start_time || !end_time) {
+    throw new Error('patient_id, start_time, dan end_time diperlukan');
+  }
+
+  // Execute transaction: create availability slot and appointment atomically
+  const newAppointment = await prisma.$transaction(async (tx) => {
+    // Create availability slot marked as booked
+    const slot = await tx.availability_slots.create({
+      data: {
+        medical_user_id: user.user_id,
+        start_time: new Date(start_time),
+        end_time: new Date(end_time),
+        is_booked: true,
+      },
+    });
+
+    // Create appointment linked to the slot and patient
+    const appointment = await tx.appointments.create({
+      data: {
+        slot_id: slot.slot_id,
+        patient_id,
+        booked_by_user_id: user.user_id,
+        status: 'scheduled',
+        notes,
+      },
+      include: {
+        slot: {
+          include: {
+            medical_user: {
+              include: {
+                doctor_profile: true,
+                therapist_profile: true,
+              },
+            },
+          },
+        },
+        patient: true,
+      },
+    });
+
+    return appointment;
+  });
+
+  return newAppointment;
+};
+
+/**
  * Get all appointments for a patient
  * @param {string} patientId - The patient ID
  * @returns {Promise<array>} - Array of appointments
@@ -78,7 +141,22 @@ export const getMyAppointments = async (userId) => {
  * @returns {Promise<array>} - Array of all slots
  */
 export const getMySlots = async (medicalUserId) => {
-  return appointmentRepository.findAllSlotsByMedicalUserId(medicalUserId);
+  return await prisma.availability_slots.findMany({
+    where: {
+      medical_user_id: medicalUserId,
+    },
+    include: {
+      // UBAH DARI 'appointments' MENJADI 'appointment'
+      appointment: { 
+        include: {
+          patient: true, // Untuk mengambil data pasien jika slot sudah di-book
+        },
+      },
+    },
+    orderBy: {
+      start_time: 'asc',
+    },
+  });
 };
 
 /**

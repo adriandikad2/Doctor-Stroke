@@ -144,3 +144,65 @@ export const findActivePrescription = async (patientId, medicationName) => {
     orderBy: { created_at: 'desc' },
   });
 };
+
+/**
+ * Find all active prescriptions for a patient
+ * @param {string} patientId - The patient ID
+ * @returns {Promise<array>} - Array of active prescriptions for the patient
+ */
+export const findActivePrescriptions = async (patientId) => {
+  return prisma.prescriptions.findMany({
+    where: {
+      patient_id: patientId,
+      is_active: true,
+      OR: [
+        { end_date: null },
+        { end_date: { gte: new Date() } },
+      ],
+    },
+    include: {
+      patient: true,
+      doctor: {
+        include: {
+          doctor_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Find medication interaction between two medications
+ * @param {string} medA - First medication name
+ * @param {string} medB - Second medication name
+ * @returns {Promise<object|null>} - The interaction record if found, null otherwise
+ */
+export const findInteraction = async (medA, medB) => {
+  return prisma.medication_interactions.findFirst({
+    where: {
+      OR: [
+        {
+          medication_a: {
+            equals: medA,
+            mode: 'insensitive',
+          },
+          medication_b: {
+            equals: medB,
+            mode: 'insensitive',
+          },
+        },
+        {
+          medication_a: {
+            equals: medB,
+            mode: 'insensitive',
+          },
+          medication_b: {
+            equals: medA,
+            mode: 'insensitive',
+          },
+        },
+      ],
+    },
+  });
+};

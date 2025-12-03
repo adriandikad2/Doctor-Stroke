@@ -35,6 +35,12 @@ router.get('/slots/:medicalUserId', authenticateToken, appointmentController.han
 router.post('/book', authenticateToken, appointmentController.handleBookAppointment);
 
 /**
+ * POST /api/appointments/book-direct
+ * Create a direct appointment (doctor/therapist only)
+ */
+router.post('/book-direct', authenticateToken, appointmentController.handleDirectBooking);
+
+/**
  * GET /api/appointments/patient/:patientId
  * Get appointments for a patient
  */

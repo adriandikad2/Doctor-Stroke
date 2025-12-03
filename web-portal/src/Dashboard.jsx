@@ -1,46 +1,67 @@
 import React, { useState, useEffect } from 'react';
+import { patientAPI, appointmentAPI } from './utils/api';
 
-const MOCK_DATA = {
-  medications: [
-    { medication_id: 1, name: 'Aspirin', dosage: '81mg', frequency: 'Daily', lastTaken: '2 hours ago' },
-    { medication_id: 2, name: 'Lisinopril', dosage: '10mg', frequency: 'Daily', lastTaken: '4 hours ago' },
-    { medication_id: 3, name: 'Metoprolol', dosage: '50mg', frequency: 'Twice daily', lastTaken: '6 hours ago' }
-  ],
-  appointments: [
-    { appointment_id: 1, title: 'Physical Therapy', time: '2:00 PM', location: 'Room 302' },
-    { appointment_id: 2, title: 'Doctor Check-up', time: '4:30 PM', location: 'Clinic A' },
-    { appointment_id: 3, title: 'Nutrition Consultation', time: 'Tomorrow 10:00 AM', location: 'Room 105' }
-  ],
-  recovery: {
-    overallRecovery: 68,
-    mobilityImprovement: 75,
-    medicationAdherence: 92,
-    therapyCompletion: 85
-  },
-  activities: [
-    { id: 1, activity: 'Completed therapy session', time: '2 hours ago', icon: '✓' },
-    { id: 2, activity: 'Logged 3 meals', time: '1 hour ago', icon: '🍽' },
-    { id: 3, activity: 'Took morning medications', time: '4 hours ago', icon: '💊' },
-    { id: 4, activity: 'Recorded blood pressure', time: '6 hours ago', icon: '📊' }
-  ]
-};
-
-export default function Dashboard() {
-  const [dashboardData, setDashboardData] = useState(null);
+export default function Dashboard({ user }) {
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    setDashboardData({
-      user: userData,
-      activeMedications: MOCK_DATA.medications,
-      upcomingEvents: MOCK_DATA.appointments,
-      recoveryProgress: MOCK_DATA.recovery,
-      recentActivities: MOCK_DATA.activities
-    });
-    
-    setLoading(false);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        // Fetch patients linked to current doctor/therapist
+        try {
+          const patientsResponse = await patientAPI.getMyPatients();
+          console.log('Patients response:', patientsResponse);
+          
+          if (patientsResponse.success) {
+            const patientsList = Array.isArray(patientsResponse.data) ? patientsResponse.data : [];
+            setPatients(patientsList);
+            
+            // Set first patient as selected by default
+            if (patientsList.length > 0) {
+              setSelectedPatient(patientsList[0]);
+            }
+          } else {
+            console.warn('Patients response not successful:', patientsResponse);
+            setPatients([]);
+          }
+        } catch (err) {
+          console.error('Error fetching patients:', err);
+          setError(err.message || 'Failed to load patients');
+          setPatients([]);
+        }
+
+        // Fetch appointments (non-blocking)
+        try {
+          const appointmentsResponse = await appointmentAPI.getMyAppointments();
+          console.log('Appointments response:', appointmentsResponse);
+          
+          if (appointmentsResponse.success) {
+            const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+            setAppointments(appointmentsList);
+          } else {
+            setAppointments([]);
+          }
+        } catch (err) {
+          console.error('Error fetching appointments:', err);
+          // Don't set error for appointments - it's non-critical
+          setAppointments([]);
+        }
+      } catch (err) {
+        console.error('Dashboard error:', err);
+        setError('Failed to load dashboard data. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   if (loading) {
@@ -60,15 +81,24 @@ export default function Dashboard() {
     );
   }
 
-  if (!dashboardData) {
-    return <div className="dashboard error">Failed to load dashboard data</div>;
+  if (error) {
+    return (
+      <div className="dashboard" style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <p style={{ color: '#d32f2f' }}>⚠️ {error}</p>
+      </div>
+    );
   }
 
-  const userName = dashboardData.user?.name || 'User';
-  const medications = dashboardData.activeMedications || [];
-  const events = dashboardData.upcomingEvents || [];
-  const recovery = dashboardData.recoveryProgress || {};
-  const activities = dashboardData.recentActivities || [];
+  if (patients.length === 0) {
+    return (
+      <div className="dashboard" style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <h3>No Patients Linked</h3>
+        <p style={{ color: 'var(--color-muted)', marginBottom: '20px' }}>
+          You haven't linked any patients yet. Use the "Link Patient" button to get started.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -392,142 +422,176 @@ export default function Dashboard() {
       `}</style>
 
       <div className="dashboard-header">
-        <h2>👋 Welcome back, {userName}!</h2>
-        <p>Here's your health management overview for today</p>
-      </div>
-
-      <div className="dashboard-grid">
-        {/* Active Medications Card */}
-        <div className="card">
-          <h3><span className="card-icon">💊</span>Active Medications</h3>
-          {medications.length > 0 ? (
-            medications.slice(0, 3).map((med) => (
-              <div key={med.medication_id} className="medication-item">
-                <p className="med-name">{med.name}</p>
-                <p className="med-details">{med.dosage} • {med.frequency}</p>
-                <p className="med-last">✓ {med.lastTaken}</p>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No active medications</p>
-          )}
-        </div>
-
-        {/* Upcoming Events Card */}
-        <div className="card">
-          <h3><span className="card-icon">📅</span>Upcoming Events</h3>
-          {events.length > 0 ? (
-            events.slice(0, 3).map((event) => (
-              <div key={event.appointment_id} className="event-item">
-                <p className="event-title">{event.title}</p>
-                <p className="event-time">⏰ {event.time}</p>
-                <p className="event-location">📍 {event.location}</p>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No upcoming events</p>
-          )}
-        </div>
-
-        {/* Quick Stats Card */}
-        <div className="card">
-          <h3><span className="card-icon">📊</span>Quick Stats</h3>
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>Today's Steps</span>
-                <span style={{ fontSize: '12px', color: 'var(--green)' }}>5,240</span>
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '70%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>Water Intake</span>
-                <span style={{ fontSize: '12px', color: 'var(--blue)' }}>1.8L / 2L</span>
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '90%' }}></div>
-              </div>
-            </div>
-          </div>
+        <h2>📊 Clinician Dashboard</h2>
+        <p>Monitor and manage your patients' health status and treatment progress</p>
+        
+        {/* Patient Selector */}
+        <div style={{ marginTop: '20px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ fontWeight: '500', fontSize: '14px' }}>Select Patient:</label>
+          <select 
+            value={selectedPatient?.patient_id || ''}
+            onChange={(e) => {
+              const patient = patients.find(p => p.patient_id === e.target.value);
+              setSelectedPatient(patient);
+            }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-card)',
+              color: 'var(--color-text)',
+              fontSize: '14px',
+              cursor: 'pointer',
+              minWidth: '200px'
+            }}
+          >
+            {patients.map(patient => (
+              <option key={patient.patient_id} value={patient.patient_id}>
+                {patient.name || 'Unknown Patient'}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Recovery Progress Section */}
-      <div style={{ marginBottom: '30px' }}>
-        <h2 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '16px', fontWeight: 700 }}>
-          🎯 Your Recovery Progress
-        </h2>
-        <div className="progress-container">
-          <div className="progress-card">
-            <p className="progress-title">Overall Recovery</p>
-            <p className="progress-value">{recovery.overallRecovery || 68}%</p>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${recovery.overallRecovery || 68}%` }}
-              ></div>
-            </div>
-            <p className="progress-label">Excellent progress!</p>
-          </div>
-
-          <div className="progress-card">
-            <p className="progress-title">Mobility Improvement</p>
-            <p className="progress-value">{recovery.mobilityImprovement || 75}%</p>
-            <div className="progress-bar green">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${recovery.mobilityImprovement || 75}%` }}
-              ></div>
-            </div>
-            <p className="progress-label">Keep up the exercises!</p>
-          </div>
-
-          <div className="progress-card">
-            <p className="progress-title">Medication Adherence</p>
-            <p className="progress-value">{recovery.medicationAdherence || 92}%</p>
-            <div className="progress-bar lavender">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${recovery.medicationAdherence || 92}%` }}
-              ></div>
-            </div>
-            <p className="progress-label">Excellent adherence!</p>
-          </div>
-
-          <div className="progress-card">
-            <p className="progress-title">Therapy Completion</p>
-            <p className="progress-value">{recovery.therapyCompletion || 85}%</p>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${recovery.therapyCompletion || 85}%` }}
-              ></div>
-            </div>
-            <p className="progress-label">Nearly there!</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activities */}
-      <div className="activities-container">
-        <h3>📝 Recent Activities</h3>
-        {activities.length > 0 ? (
-          activities.map((activity) => (
-            <div key={activity.id} className="activity-item">
-              <div className="activity-icon">{activity.icon}</div>
-              <div className="activity-content">
-                <p className="activity-text">{activity.activity}</p>
-                <p className="activity-time">{activity.time}</p>
+      {selectedPatient && (
+        <>
+          <div style={{ 
+            backgroundColor: 'var(--color-bg)', 
+            padding: '16px', 
+            borderRadius: '12px', 
+            marginBottom: '24px',
+            border: '1px solid var(--color-border)'
+          }}>
+            <h3 style={{ margin: '0 0 8px 0' }}>Patient Info</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div>
+                <p style={{ margin: '0', fontSize: '12px', color: 'var(--color-muted)' }}>Name</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '600' }}>{selectedPatient.name}</p>
+              </div>
+              <div>
+                <p style={{ margin: '0', fontSize: '12px', color: 'var(--color-muted)' }}>Date of Birth</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '600' }}>
+                  {selectedPatient.date_of_birth ? new Date(selectedPatient.date_of_birth).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p style={{ margin: '0', fontSize: '12px', color: 'var(--color-muted)' }}>Gender</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '600' }}>{selectedPatient.gender || 'N/A'}</p>
+              </div>
+              <div>
+                <p style={{ margin: '0', fontSize: '12px', color: 'var(--color-muted)' }}>Unique Code</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '600' }}>
+                  <code style={{ 
+                    backgroundColor: 'var(--color-card)', 
+                    padding: '4px 8px', 
+                    borderRadius: '4px',
+                    fontSize: '12px'
+                  }}>{selectedPatient.unique_code}</code>
+                </p>
               </div>
             </div>
-          ))
-        ) : (
-          <p style={{ color: 'var(--color-muted-2)' }}>No recent activities</p>
-        )}
-      </div>
+          </div>
+
+          <div className="dashboard-grid">
+            {/* Appointments for Patient */}
+            <div className="card">
+              <h3><span className="card-icon">📅</span>Upcoming Appointments</h3>
+              {appointments.filter(a => a.patient_id === selectedPatient.patient_id).length > 0 ? (
+                appointments.filter(a => a.patient_id === selectedPatient.patient_id).slice(0, 3).map((event) => (
+                  <div key={event.appointment_id} className="event-item">
+                    <p className="event-title">{event.patient?.name || 'Appointment'}</p>
+                    <p className="event-time">⏰ {new Date(event.created_at).toLocaleString()}</p>
+                    <p className="event-location">📍 Status: {event.status}</p>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No upcoming appointments</p>
+              )}
+            </div>
+
+            {/* Quick Stats Card */}
+            <div className="card">
+              <h3><span className="card-icon">📊</span>Quick Stats</h3>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>Patient Status</span>
+                    <span style={{ fontSize: '12px', color: 'var(--green)' }}>✓ Active</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: '100%' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>Linked Since</span>
+                    <span style={{ fontSize: '12px', color: 'var(--blue)' }}>
+                      {selectedPatient.created_at ? new Date(selectedPatient.created_at).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Medical History Card */}
+            <div className="card">
+              <h3><span className="card-icon">📋</span>Medical History</h3>
+              {selectedPatient.medical_history ? (
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
+                  {selectedPatient.medical_history}
+                </p>
+              ) : (
+                <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No medical history recorded</p>
+              )}
+            </div>
+          </div>
+
+          {/* Recovery Progress Section */}
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '16px', fontWeight: 700 }}>
+              🎯 Recovery Overview
+            </h2>
+            <div className="progress-container">
+              <div className="progress-card">
+                <p className="progress-title">Overall Status</p>
+                <p className="progress-value">Good</p>
+                <p className="progress-label">Patient is making steady progress</p>
+              </div>
+
+              <div className="progress-card">
+                <p className="progress-title">Last Update</p>
+                <p className="progress-value" style={{ fontSize: '14px' }}>
+                  {new Date().toLocaleDateString()}
+                </p>
+                <p className="progress-label">Updated today</p>
+              </div>
+
+              <div className="progress-card">
+                <p className="progress-title">Care Team</p>
+                <p className="progress-value" style={{ fontSize: '14px' }}>1</p>
+                <p className="progress-label">Care providers assigned</p>
+              </div>
+
+              <div className="progress-card">
+                <p className="progress-title">Actions</p>
+                <button style={{
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--blue)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  View Details →
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
