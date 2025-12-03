@@ -6,6 +6,7 @@ import Patients from './components/Patients';
 import Diet from './components/Diet';
 import Medications from './components/Medications';
 import Progress from './components/Progress';
+import EmergencyButton from './components/EmergencyButton';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './styles.css';
 
@@ -49,6 +50,7 @@ const AppContent = () => {
       fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
     }}>
       <Navbar />
+      <EmergencyButton />
       
       <main className="main-content">
         <Routes>

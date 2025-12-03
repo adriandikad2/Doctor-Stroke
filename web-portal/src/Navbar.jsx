@@ -256,9 +256,25 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
             Sign in
           </button>
         ) : (
-          <button className="btn-primary" onClick={() => { onSignOut(); setMobileMenuOpen(false); }}>
-            Sign out
-          </button>
+          <>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 12px',
+              background: 'rgba(131, 133, 204, 0.1)',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--primary)',
+              textTransform: 'capitalize'
+            }}>
+              {user?.role === 'doctor' ? '👨‍⚕️' : user?.role === 'therapist' ? '🏥' : '👤'} {user?.role}
+            </div>
+            <button className="btn-primary" onClick={() => { onSignOut(); setMobileMenuOpen(false); }}>
+              Sign out
+            </button>
+          </>
         )}
       </nav>
 

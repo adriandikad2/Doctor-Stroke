@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { patientAPI, appointmentAPI } from './utils/api';
+import PrescriptionEntry from './components/PrescriptionEntry';
+import AppointmentBooking from './components/AppointmentBooking';
+import MedicalHistoryLogger from './components/MedicalHistoryLogger';
 
 export default function Dashboard({ user }) {
   const [patients, setPatients] = useState([]);
@@ -7,6 +10,7 @@ export default function Dashboard({ user }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -62,7 +66,7 @@ export default function Dashboard({ user }) {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [refreshTrigger]);
 
   if (loading) {
     return (
@@ -492,6 +496,31 @@ export default function Dashboard({ user }) {
               </div>
             </div>
           </div>
+
+          {/* Prescription Management Section - For Doctors/Therapists */}
+          {(user?.role === 'doctor' || user?.role === 'therapist') && (
+            <PrescriptionEntry 
+              patientId={selectedPatient.patient_id}
+              user={user}
+              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          )}
+
+          {/* Appointment Booking Section - For Doctors/Therapists */}
+          {(user?.role === 'doctor' || user?.role === 'therapist') && (
+            <AppointmentBooking 
+              user={user}
+              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          )}
+
+          {/* Vital Signs Tracker - For Doctors/Therapists */}
+          {(user?.role === 'doctor' || user?.role === 'therapist') && (
+            <MedicalHistoryLogger 
+              patientId={selectedPatient.patient_id}
+              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          )}
 
           <div className="dashboard-grid">
             {/* Appointments for Patient */}
