@@ -65,18 +65,26 @@ export default function Scheduler({ user }){
       return
     }
 
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+
+    if (end <= start) {
+      setError('End time must be after start time')
+      return
+    }
+
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
       const response = await appointmentAPI.createSlot({
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString()
+        start_time: start.toISOString(),
+        end_time: end.toISOString()
       })
 
       if (response.success) {
-        setSuccess('Availability slot created successfully!')
+        setSuccess('✓ Availability slot created successfully!')
         setStartTime('')
         setEndTime('')
         
