@@ -7,6 +7,13 @@ export default defineConfig({
   server: {
     port: 8082,
     host: true,
+    proxy: {
+      '/api': {
+        target: process.env.BACKEND_URL || 'http://localhost:3001',
+        changeOrigin: true,
+        rewrite: (path) => path,
+      }
+    }
   },
   build: {
     outDir: 'dist',

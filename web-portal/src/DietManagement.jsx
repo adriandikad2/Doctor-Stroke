@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { patientAPI, nutritionAPI, logAPI } from './utils/api';
+import NutritionCatalogEntry from './components/NutritionCatalogEntry';
 
 // Calendar component for viewing logged meals by date
 const MealCalendar = ({ patientId, authToken, onSelectDate }) => {
@@ -347,25 +348,44 @@ export default function DietManagement({ user }) {
   
   const [profile, setProfile] = useState(null);
   const [meals, setMeals] = useState([]);
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // State for form update nutrition profile
-  const [profileForm, setProfileForm] = useState({
-    sodium_limit_mg: '',
-    fiber_target_g: '',
-    calorie_target_max: ''
-  });
-  
-  // State for form log meal
-  const [mealForm, setMealForm] = useState({
-    meal_type: 'breakfast',
-    foods_consumed: '',
-    calories: '',
-    sodium_mg: '',
-    fiber_g: ''
-  });
+  const fetchNutritionData = async (patientIdOverride) => {
+    const patientId = patientIdOverride || selectedPatient?.patient_id;
+    if (!patientId) {
+      setProfile(null);
+      setMeals([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const [profileResp, mealsResp] = await Promise.all([
+        nutritionAPI.getProfile(patientId).catch(() => ({ success: false })),
+        logAPI.meal.getByPatientId(patientId).catch(() => ({ success: false })),
+      ]);
+
+      if (profileResp.success && profileResp.data) {
+        setProfile(profileResp.data);
+      } else {
+        setProfile(null);
+      }
+
+      if (mealsResp.success && mealsResp.data) {
+        setMeals(mealsResp.data);
+      } else {
+        setMeals([]);
+      }
+    } catch (err) {
+      setError('Failed to load nutrition data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 1. Fetch patients when component mounts
   useEffect(() => {
@@ -398,41 +418,6 @@ export default function DietManagement({ user }) {
 
   // 2. Fetch nutrition data when patient is selected
   useEffect(() => {
-    if (!selectedPatient?.patient_id) {
-      setProfile(null);
-      setMeals([]);
-      return;
-    }
-
-    const fetchNutritionData = async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        // Fetch nutrition profile
-        const profileResp = await nutritionAPI.getProfile(selectedPatient.patient_id);
-        if (profileResp.success && profileResp.data) {
-          setProfile(profileResp.data);
-          setProfileForm({
-            sodium_limit_mg: profileResp.data.sodium_limit_mg || '',
-            fiber_target_g: profileResp.data.fiber_target_g || '',
-            calorie_target_max: profileResp.data.calorie_target_max || ''
-          });
-        }
-
-        // Fetch meal logs
-        const mealsResp = await logAPI.meal.getByPatientId(selectedPatient.patient_id);
-        if (mealsResp.success && mealsResp.data) {
-          setMeals(mealsResp.data);
-        }
-      } catch (err) {
-        setError('Failed to load nutrition data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNutritionData();
   }, [selectedPatient]);
 
@@ -584,89 +569,19 @@ export default function DietManagement({ user }) {
           max-width: 300px;
         }
 
-        .diet-grid {
+        .cards-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-          margin-bottom: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 16px;
+          margin-top: 20px;
         }
 
-        .form-card {
+        .summary-card {
           background: var(--color-card);
-          padding: 24px;
+          padding: 16px;
           border-radius: 12px;
+          border: 1px solid var(--color-border);
           box-shadow: 0 12px 30px rgba(14, 30, 45, 0.06);
-          border: 1px solid var(--color-border);
-          animation: slideInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .form-card:nth-child(1) { animation-delay: 0.2s; }
-        .form-card:nth-child(2) { animation-delay: 0.3s; }
-
-        .form-card h4 {
-          margin: 0 0 16px 0;
-          color: var(--primary);
-          font-size: 16px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .form-card form {
-          display: grid;
-          gap: 12px;
-        }
-
-        .form-card label {
-          display: block;
-          font-weight: 600;
-          font-size: 13px;
-          color: var(--color-text);
-          margin-bottom: 4px;
-        }
-
-        .form-card input,
-        .form-card select {
-          width: 100%;
-          padding: 10px 12px;
-          border: 1px solid var(--color-border);
-          border-radius: 8px;
-          background: var(--color-bg);
-          color: var(--color-text);
-          font-size: 13px;
-          margin-bottom: 0;
-          transition: all 0.3s ease;
-        }
-
-        .form-card input:focus,
-        .form-card select:focus {
-          outline: none;
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(131, 133, 204, 0.1);
-        }
-
-        .form-card button {
-          padding: 10px 16px;
-          border-radius: 8px;
-          border: none;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 8px;
-          font-size: 14px;
-        }
-
-        .form-card button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .diet-divider {
-          margin: 24px 0;
-          border: none;
-          border-top: 1px solid var(--color-border);
         }
 
         .meal-list {
@@ -748,198 +663,54 @@ export default function DietManagement({ user }) {
           to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 1000px) {
-          .diet-grid {
-            grid-template-columns: 1fr;
-          }
-        }
+        @media (max-width: 1000px) {}
       `}</style>
 
-      <h3>Nutrition Management</h3>
       
       {error && (
         <div className="error-message">❌ {error}</div>
       )}
-      
-      <div className="patient-selector">
-        <label htmlFor="patient-select">🏥 Select Patient</label>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <select
-            id="patient-select"
-            value={selectedPatient?.patient_id || ''}
-            onChange={(e) => {
-              const patient = patients.find(p => p.patient_id === e.target.value);
-              setSelectedPatient(patient || null);
-            }}
-            style={{ marginBottom: 0 }}
-          >
-            <option value="">-- Select Patient --</option>
-            {patients.map(p => (
-              <option key={p.patient_id} value={p.patient_id}>{p.name} (ID: {p.unique_code})</option>
-            ))}
-          </select>
-          {loading && <div className="loading-spinner"></div>}
-        </div>
-      </div>
 
-      {!selectedPatient && !loading && (
-        <div className="empty-state">
-          <p style={{ fontSize: '14px' }}>👉 Please select a patient to view nutrition data and diet plans.</p>
-        </div>
+      {selectedPatient && user?.role === 'doctor' && (
+        <NutritionCatalogEntry 
+          user={user} 
+          onSuccess={() => fetchNutritionData(selectedPatient.patient_id)} 
+        />
       )}
 
       {selectedPatient && !loading && (
-        <div className="diet-grid">
-          
-          {/* Left Panel: Forms */}
-          <div>
-            <div className="form-card">
-              <h4>📋 Patient Nutrition Profile</h4>
-              <form onSubmit={handleUpdateProfile}>
-                <div>
-                  <label>Sodium Limit (mg)</label>
-                  <input
-                    type="number"
-                    name="sodium_limit_mg"
-                    value={profileForm.sodium_limit_mg}
-                    onChange={(e) => setProfileForm({...profileForm, sodium_limit_mg: e.target.value})}
-                    placeholder="e.g., 1500"
-                  />
-                </div>
-                <div>
-                  <label>Fiber Target (g)</label>
-                  <input
-                    type="number"
-                    name="fiber_target_g"
-                    value={profileForm.fiber_target_g}
-                    onChange={(e) => setProfileForm({...profileForm, fiber_target_g: e.target.value})}
-                    placeholder="e.g., 25"
-                  />
-                </div>
-                <div>
-                  <label>Calorie Target (Maximum)</label>
-                  <input
-                    type="number"
-                    name="calorie_target_max"
-                    value={profileForm.calorie_target_max}
-                    onChange={(e) => setProfileForm({...profileForm, calorie_target_max: e.target.value})}
-                    placeholder="e.g., 1800"
-                  />
-                </div>
-                <button type="submit" style={{ background: 'var(--blue)', color: 'white' }}>
-                  💾 Update Profile
-                </button>
-              </form>
-              
-              <hr className="diet-divider" />
-              
-              <h4>🍽️ Log New Meal</h4>
-              <form onSubmit={handleLogMeal}>
-                <div>
-                  <label>Meal Type</label>
-                  <select
-                    name="meal_type"
-                    value={mealForm.meal_type}
-                    onChange={(e) => setMealForm({...mealForm, meal_type: e.target.value})}
-                  >
-                    <option value="breakfast">🌅 Breakfast</option>
-                    <option value="lunch">☀️ Lunch</option>
-                    <option value="dinner">🌙 Dinner</option>
-                    <option value="snack">🍪 Snack</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Foods (separate with commas)</label>
-                  <input
-                    name="foods_consumed"
-                    value={mealForm.foods_consumed}
-                    onChange={(e) => setMealForm({...mealForm, foods_consumed: e.target.value})}
-                    placeholder="e.g., oatmeal, apple, milk"
-                  />
-                </div>
-                <div>
-                  <label>Calories (kcal)</label>
-                  <input
-                    name="calories"
-                    value={mealForm.calories}
-                    onChange={(e) => setMealForm({...mealForm, calories: e.target.value})}
-                    placeholder="e.g., 350"
-                    type="number"
-                  />
-                </div>
-                <div>
-                  <label>Sodium (mg)</label>
-                  <input
-                    name="sodium_mg"
-                    value={mealForm.sodium_mg}
-                    onChange={(e) => setMealForm({...mealForm, sodium_mg: e.target.value})}
-                    placeholder="e.g., 200"
-                    type="number"
-                  />
-                </div>
-                <div>
-                  <label>Fiber (g)</label>
-                  <input
-                    name="fiber_g"
-                    value={mealForm.fiber_g}
-                    onChange={(e) => setMealForm({...mealForm, fiber_g: e.target.value})}
-                    placeholder="e.g., 5"
-                    type="number"
-                  />
-                </div>
-                <button type="submit" style={{ background: 'var(--green)', color: 'white' }}>
-                  ✏️ Log Meal
-                </button>
-              </form>
-            </div>
-            
-            {/* Add the Meal Calendar */}
-            <MealCalendar 
-              patientId={selectedPatient.patient_id} 
-              authToken={localStorage.getItem('authToken')}
-              onSelectDate={(date) => console.log('Selected date:', date)}
-            />
+        <div className="cards-grid">
+          <div className="summary-card">
+            <h4 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>📅 Nutrition Profile Data</h4>
+            {profile ? (
+              <div style={{ display: 'grid', gap: 6, fontSize: 13 }}>
+                <div>Calorie Target: <strong>{profile.calorie_target_max || '-'} kcal</strong></div>
+                <div>Sodium Limit: <strong>{profile.sodium_limit_mg || '-'} mg</strong></div>
+                <div>Fiber Target: <strong>{profile.fiber_target_g || '-'} g</strong></div>
+              </div>
+            ) : (
+              <p style={{ color: 'var(--color-muted-2)', fontSize: 12 }}>No nutrition profile available</p>
+            )}
           </div>
 
-          {/* Right Panel: Data & Plans */}
-          <div>
-            <div className="form-card">
-              <h4>📅 Nutrition Profile Data</h4>
-              {profile ? (
-                <div style={{ fontSize: '13px' }}>
-                  <div className="meal-item">
-                    <p className="meal-time">Sodium Limit: <strong>{profile.sodium_limit_mg || '-'} mg</strong></p>
-                    <p className="meal-time">Fiber Target: <strong>{profile.fiber_target_g || '-'} g</strong></p>
-                    <p className="meal-time">Calorie Target: <strong>{profile.calorie_target_max || '-'} kcal</strong></p>
+          <div className="summary-card">
+            <h4 style={{ margin: '0 0 10px 0', color: 'var(--primary)' }}>📝 Recorded Meal History</h4>
+            <div className="meal-list">
+              {meals.length > 0 ? meals.map((meal, idx) => (
+                <div key={meal.meal_log_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.05}s` }}>
+                  <p className="meal-time">{new Date(meal.logged_for || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
+                  <p className="meal-foods">🍽️ {Array.isArray(meal.foods) ? meal.foods.join(', ') : meal.foods}</p>
+                  <div className="meal-nutrition">
+                    <span>⚡ {meal.calories || 0} kcal</span>
+                    <span>🧂 {meal.sodium_mg || 0}mg Na</span>
+                    <span>🌾 {meal.fiber_g || 0}g Fiber</span>
                   </div>
                 </div>
-              ) : (
-                <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px' }}>No nutrition profile available</p>
+              )) : (
+                <p style={{ color: 'var(--color-muted-2)', fontSize: 12 }}>No meals recorded yet. Start logging from catalog ➜</p>
               )}
             </div>
-
-            <div className="form-card">
-              <h4>📝 Recorded Meal History</h4>
-              <div className="meal-list">
-                {meals.length > 0 ? meals.map((meal, idx) => (
-                  <div key={meal.meal_log_id || idx} className="meal-item" style={{ animationDelay: `${idx * 0.1}s` }}>
-                    <p className="meal-time">{new Date(meal.logged_for || meal.created_at).toLocaleDateString()}: {meal.meal_type}</p>
-                    <p className="meal-foods">🍽️ {Array.isArray(meal.foods) ? meal.foods.join(', ') : meal.foods}</p>
-                    <div className="meal-nutrition">
-                      <span>⚡ {meal.calories || 0} kcal</span>
-                      <span>🧂 {meal.sodium_mg || 0}mg Na</span>
-                      <span>🌾 {meal.fiber_g || 0}g Fiber</span>
-                    </div>
-                  </div>
-                )) : (
-                  <p style={{ color: 'var(--color-muted-2)', textAlign: 'center', fontSize: '12px', padding: '20px 0' }}>
-                    No meals recorded yet. Start logging now! 👇
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
-
         </div>
       )}
     </section>

@@ -1,89 +1,53 @@
-const db = require('../config/db');
+import prisma from '../config/db.js';
 
-const logAdherenceEvent = async (data) => {
-  const {
-    adherence_id,
-    prescription_id,
-    patient_id,
-    logged_by,
-    status,
-    scheduled_time,
-    taken_time,
-    notes,
-  } = data;
-
-  const query = `
-    INSERT INTO medication_adherence_logs (
-      adherence_id,
-      prescription_id,
-      patient_id,
-      logged_by,
-      status,
-      scheduled_time,
-      taken_time,
-      notes
-    )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-    RETURNING *;
-  `;
-
-  const { rows } = await db.query(query, [
-    adherence_id,
-    prescription_id,
-    patient_id,
-    logged_by,
-    status,
-    scheduled_time || null,
-    taken_time || null,
-    notes || null,
-  ]);
-
-  return rows[0];
+export const logAdherenceEvent = async (data) => {
+  return prisma.medication_adherence_logs.create({
+    data: {
+      adherence_id: data.adherence_id || undefined,
+      prescription_id: data.prescription_id,
+      patient_id: data.patient_id,
+      logged_by_user_id: data.logged_by || data.logged_by_user_id,
+      status: data.status,
+      scheduled_time: data.scheduled_time ? new Date(data.scheduled_time) : null,
+      taken_time: data.taken_time ? new Date(data.taken_time) : null,
+      notes: data.notes || null,
+    },
+  });
 };
 
-const getLogsForPrescription = async (prescription_id, { limit = 50 } = {}) => {
-  const query = `
-    SELECT *
-    FROM medication_adherence_logs
-    WHERE prescription_id = $1
-    ORDER BY created_at DESC
-    LIMIT $2
-  `;
-
-  const { rows } = await db.query(query, [prescription_id, limit]);
-  return rows;
+export const getLogsForPrescription = async (prescription_id, { limit = 50 } = {}) => {
+  return prisma.medication_adherence_logs.findMany({
+    where: { prescription_id },
+    orderBy: { created_at: 'desc' },
+    take: limit,
+  });
 };
 
-const getAdherenceStats = async (prescription_id, days = 7) => {
-  const query = `
-    SELECT
-      COUNT(*) FILTER (WHERE status = 'taken') AS taken_count,
-      COUNT(*) FILTER (WHERE status = 'missed') AS missed_count,
-      COUNT(*) FILTER (WHERE status = 'delayed') AS delayed_count,
-      COUNT(*) AS total_events
-    FROM medication_adherence_logs
-    WHERE prescription_id = $1
-      AND created_at >= NOW() - $2::interval;
-  `;
-
-  const { rows } = await db.query(query, [prescription_id, `${days} days`]);
-  return rows[0];
+export const getAdherenceStats = async (prescription_id, days = 7) => {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const logs = await prisma.medication_adherence_logs.findMany({
+    where: { prescription_id, created_at: { gte: since } },
+  });
+  const stats = { taken_count: 0, missed_count: 0, delayed_count: 0, total_events: logs.length };
+  logs.forEach((l) => {
+    if (l.status === 'taken') stats.taken_count += 1;
+    if (l.status === 'missed') stats.missed_count += 1;
+    if (l.status === 'delayed') stats.delayed_count += 1;
+  });
+  return stats;
 };
 
-const getRecentMissedByPatient = async (patient_id, days = 7) => {
-  const query = `
-    SELECT COUNT(*) AS missed_count
-    FROM medication_adherence_logs
-    WHERE patient_id = $1
-      AND status = 'missed'
-      AND created_at >= NOW() - $2::interval;
-  `;
-
-  const { rows } = await db.query(query, [patient_id, `${days} days`]);
-  return Number(rows[0]?.missed_count || 0);
+export const getRecentMissedByPatient = async (patient_id, days = 7) => {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const count = await prisma.medication_adherence_logs.count({
+    where: { patient_id, status: 'missed', created_at: { gte: since } },
+  });
+  return count;
 };
 
-module.exports = {
+export default {
   logAdherenceEvent,
   getLogsForPrescription,
   getAdherenceStats,

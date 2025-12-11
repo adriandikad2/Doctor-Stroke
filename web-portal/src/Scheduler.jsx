@@ -1,17 +1,38 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { appointmentAPI, patientAPI } from './utils/api'
 
 export default function Scheduler({ user }){
   const [patients, setPatients] = useState([])
   const [selectedPatient, setSelectedPatient] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
+  const [slotDate, setSlotDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [slotTime, setSlotTime] = useState('09:00')
   const [appointmentType, setAppointmentType] = useState('consultation')
   const [loading, setLoading] = useState(false)
   const [mySlots, setMySlots] = useState([])
   const [appointments, setAppointments] = useState([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const halfHourOptions = useMemo(() => {
+    const times = []
+    for (let hour = 9; hour <= 20; hour += 1) {
+      ['00', '30'].forEach((minute) => {
+        const startTime = `${String(hour).padStart(2, '0')}:${minute}`
+        // Calculate end time (30 minutes later)
+        let endHour = hour
+        let endMinute = minute === '00' ? '30' : '00'
+        if (minute === '30') {
+          endHour = hour + 1
+        }
+        const endTime = `${String(endHour).padStart(2, '0')}:${endMinute}`
+        times.push({
+          value: startTime,
+          display: `${startTime} - ${endTime}`
+        })
+      })
+    }
+    return times
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,18 +82,13 @@ export default function Scheduler({ user }){
   }, [])
 
   const handleCreateSlot = async () => {
-    if (!startTime || !endTime) {
-      setError('Please select both start and end time')
+    if (!slotDate || !slotTime) {
+      setError('Pilih tanggal dan jam mulai slot')
       return
     }
 
-    const start = new Date(startTime)
-    const end = new Date(endTime)
-
-    if (end <= start) {
-      setError('End time must be after start time')
-      return
-    }
+    const start = new Date(`${slotDate}T${slotTime}:00`)
+    const end = new Date(start.getTime() + 30 * 60 * 1000)
 
     setLoading(true)
     setError('')
@@ -85,9 +101,8 @@ export default function Scheduler({ user }){
       })
 
       if (response.success) {
-        setSuccess('✓ Availability slot created successfully!')
-        setStartTime('')
-        setEndTime('')
+        setSuccess('Slot berhasil dibuat')
+        setSlotTime('09:00')
         setAppointmentType('consultation')
         
         // Refresh slots
@@ -107,7 +122,7 @@ export default function Scheduler({ user }){
 
   return (
     <section className="scheduler" style={{ marginTop: 20 }}>
-      <h3>📅 Patient Appointment Management</h3>
+      <h3>Appointment Slots</h3>
       
       {error && <div style={{ 
         color: '#d32f2f', 
@@ -148,24 +163,29 @@ export default function Scheduler({ user }){
               </select>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Start Time</label>
-              <input 
-                type='datetime-local' 
-                value={startTime} 
-                onChange={(e)=> setStartTime(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>End Time</label>
-              <input 
-                type='datetime-local' 
-                value={endTime} 
-                onChange={(e)=> setEndTime(e.target.value)}
-                style={{ width: '100%' }}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Date</label>
+                <input 
+                  type='date' 
+                  value={slotDate} 
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e)=> setSlotDate(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Start Time</label>
+                <select 
+                  value={slotTime} 
+                  onChange={(e)=> setSlotTime(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  {halfHourOptions.map(option => (
+                    <option key={option.value} value={option.value}>{option.display}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <button 
@@ -182,7 +202,7 @@ export default function Scheduler({ user }){
                 opacity: loading ? 0.6 : 1
               }}
             >
-              {loading ? 'Creating...' : '➕ Create Slot'}
+              {loading ? 'Creating...' : 'Create Slot'}
             </button>
           </div>
         </div>
@@ -197,13 +217,14 @@ export default function Scheduler({ user }){
               {mySlots.slice(0, 5).map(slot => (
                 <li key={slot.slot_id} style={{ padding: 8, borderBottom:'1px solid var(--color-border)', fontSize: '12px' }}>
                   <div style={{ fontWeight: 600 }}>
-                    {new Date(slot.start_time).toLocaleTimeString()}
+                    {new Date(slot.start_time).toLocaleDateString()} •{' '}
+                    {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                   <div style={{ color:'var(--color-muted-2)', fontSize: '11px' }}>
                     {slot.appointment_type || 'appointment'}
                   </div>
                   <div style={{ color:'var(--color-muted-2)' }}>
-                    Status: {slot.is_booked ? '✓ Booked' : '○ Available'}
+                    Status: {slot.is_booked ? 'Booked' : 'Available'}
                   </div>
                 </li>
               ))}
@@ -214,7 +235,7 @@ export default function Scheduler({ user }){
 
       {/* Upcoming Appointments */}
       <div style={{ marginTop: 24 }}>
-        <h4 style={{ marginBottom: '16px' }}>📋 Upcoming Appointments</h4>
+        <h4 style={{ marginBottom: '16px' }}>Upcoming Appointments</h4>
         {appointments.length === 0 ? (
           <p style={{ color:'var(--color-muted-2)' }}>No appointments scheduled</p>
         ) : (
@@ -234,10 +255,10 @@ export default function Scheduler({ user }){
                   {appt.patient?.name || 'Unknown Patient'}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-muted-2)', marginBottom: '6px' }}>
-                  📅 {new Date(appt.slot?.start_time).toLocaleString()}
+                  Date: {new Date(appt.slot?.start_time).toLocaleString()}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-muted-2)', marginBottom: '6px' }}>
-                  ⏱️ Duration: {Math.round((new Date(appt.slot?.end_time) - new Date(appt.slot?.start_time)) / 60000)} mins
+                  Duration: {Math.round((new Date(appt.slot?.end_time) - new Date(appt.slot?.start_time)) / 60000)} mins
                 </div>
                 <div style={{ 
                   fontSize: '11px', 

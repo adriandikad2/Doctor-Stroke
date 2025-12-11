@@ -241,6 +241,58 @@ export const appointmentAPI = {
 };
 
 // =========================================================
+// MEDICATION CATALOG
+// =========================================================
+export const medicationCatalogAPI = {
+  getCatalog: () => apiRequest('/medication-catalogs/all', 'GET'),
+  assignToPatient: (catalogId, patientId) =>
+    apiRequest(`/medication-catalogs/${catalogId}/assign`, 'POST', { patient_id: patientId }),
+  getPatientMedications: (patientId) =>
+    apiRequest(`/medication-catalogs/patient/${patientId}`, 'GET'),
+  logAdherence: (payload) => apiRequest('/medication-catalogs/adherence/log', 'POST', payload),
+  getAdherence: (patientId, days = 30) =>
+    apiRequest(`/medication-catalogs/adherence/${patientId}?days=${days}`, 'GET'),
+};
+
+// =========================================================
+// EXERCISE CATALOG
+// =========================================================
+export const exerciseCatalogAPI = {
+  getAll: () => apiRequest('/exercise-catalogs/all', 'GET'),
+  getBySpecialization: (specialization) =>
+    apiRequest(`/exercise-catalogs/specialization/${specialization}`, 'GET'),
+  assignToPatient: (catalogId, patientId) =>
+    apiRequest(`/exercise-catalogs/${catalogId}/assign`, 'POST', { patient_id: patientId }),
+  getPatientExercises: (patientId) =>
+    apiRequest(`/exercise-catalogs/patient/${patientId}`, 'GET'),
+  logAdherence: (payload) => apiRequest('/exercise-catalogs/adherence/log', 'POST', payload),
+  getAdherence: (patientId, days = 30) =>
+    apiRequest(`/exercise-catalogs/adherence/${patientId}?days=${days}`, 'GET'),
+};
+
+// =========================================================
+// NUTRITION CATALOG
+// =========================================================
+export const nutritionCatalogAPI = {
+  getAll: () => apiRequest('/nutrition-catalogs/all', 'GET'),
+  getByCategory: (category) => apiRequest(`/nutrition-catalogs/category/${category}`, 'GET'),
+  assignToPatient: (catalogId, patientId) =>
+    apiRequest(`/nutrition-catalogs/${catalogId}/assign`, 'POST', { patient_id: patientId }),
+  getPatientFoods: (patientId) =>
+    apiRequest(`/nutrition-catalogs/patient/${patientId}`, 'GET'),
+  logAdherence: (payload) => apiRequest('/nutrition-catalogs/adherence/log', 'POST', payload),
+  getAdherence: (patientId, days = 30) =>
+    apiRequest(`/nutrition-catalogs/adherence/${patientId}?days=${days}`, 'GET'),
+};
+
+// =========================================================
+// INSIGHT
+// =========================================================
+export const insightAPI = {
+  getPatientSummary: (patientId) => apiRequest(`/insights/patient/${patientId}/summary`, 'GET'),
+};
+
+// =========================================================
 // PRESCRIPTION ENDPOINTS
 // =========================================================
 

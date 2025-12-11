@@ -31,6 +31,13 @@ export const handleLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await authService.loginUser(email, password);
+    if (!result || !result.token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Login successful',

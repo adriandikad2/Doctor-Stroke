@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react'
 import Scheduler from './Scheduler'
 import SignIn from './SignIn'
 import DietManagement from './DietManagement'
+import Medications from './Medications'
+import MedicationAdherence from './MedicationAdherence'
 import Dashboard from './Dashboard'
-import Progress from './Progress'
 import Navbar from './Navbar'
 import { patientAPI, getSavedUser, clearAuth } from './utils/api'
 
@@ -105,18 +106,6 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <div className="hero-side">
-                <div className="panel">
-                  <h4>Welcome to Doctor Stroke Portal</h4>
-                  <p>Manage your patients' recovery journey with comprehensive clinical tools.</p>
-                  <ul>
-                    <li>📊 Dashboard & Patient Overview</li>
-                    <li>📅 Schedule & Appointments</li>
-                    <li>💊 Medication & Adherence Tracking</li>
-                    <li>🥗 Nutrition & Diet Management</li>
-                  </ul>
-                </div>
-              </div>
             </section>
 
             <section className="modules">
@@ -127,9 +116,6 @@ export default function App() {
                 </div>
                 <div className="module-card" onClick={() => handleNavigate('scheduler')} style={{cursor: 'pointer'}}>
                   <div className="module-emoji">📅</div><h4>Scheduler</h4><p>Manage appointments and therapy sessions.</p>
-                </div>
-                <div className="module-card" onClick={() => handleNavigate('progress')} style={{cursor: 'pointer'}}>
-                  <div className="module-emoji">📈</div><h4>Progress Tracking</h4><p>Track patient recovery and adherence.</p>
                 </div>
                 
                 <div className="module-card" onClick={() => handleNavigate('diet')} style={{cursor: 'pointer'}}>
@@ -148,12 +134,16 @@ export default function App() {
           <Scheduler user={user} />
         )}
         
-        {page === 'diet' && isLoggedIn && (
-          <DietManagement user={user} />
+        {page === 'medication' && isLoggedIn && (
+          <Medications user={user} />
         )}
 
-        {page === 'progress' && isLoggedIn && (
-          <Progress user={user} />
+        {page === 'adherence' && isLoggedIn && (
+          <MedicationAdherence user={user} />
+        )}
+        
+        {page === 'diet' && isLoggedIn && (
+          <DietManagement user={user} />
         )}
       </main>
 

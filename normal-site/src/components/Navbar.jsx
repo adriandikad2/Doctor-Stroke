@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import logoNew from '../assets/logo-new.png';
 
 const Navbar = () => {
   const { isAuthenticated, logout } = useAuth();
@@ -27,13 +28,12 @@ const Navbar = () => {
         alignItems: 'center',
         gap: '12px'
       }}>
-        <div className="brand-mark" style={{
-          width: '20px',
-          height: '20px',
-          backgroundColor: '#8385CC',
-          borderRadius: '6px',
-          boxShadow: '0 2px 8px rgba(131, 133, 204, 0.3)'
-        }}></div>
+        <img src={logoNew} alt="Doctor Stroke" style={{
+          width: '32px',
+          height: '32px',
+          objectFit: 'contain',
+          borderRadius: '6px'
+        }} />
         <span className="brand-name" style={{
           fontSize: '20px',
           fontWeight: '700',
@@ -110,6 +110,38 @@ const Navbar = () => {
               }}
             >
               💊 Medications
+            </Link>
+            
+            <Link
+              to="/appointments"
+              className={`nav-link ${isActive('/appointments') ? 'active' : ''}`}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: isActive('/appointments') ? '#8385CC' : '#64748b',
+                fontWeight: isActive('/appointments') ? '600' : '400',
+                backgroundColor: isActive('/appointments') ? 'rgba(131, 133, 204, 0.1)' : 'transparent',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              📅 Appointments
+            </Link>
+            
+            <Link
+              to="/exercises"
+              className={`nav-link ${isActive('/exercises') ? 'active' : ''}`}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: isActive('/exercises') ? '#8385CC' : '#64748b',
+                fontWeight: isActive('/exercises') ? '600' : '400',
+                backgroundColor: isActive('/exercises') ? 'rgba(131, 133, 204, 0.1)' : 'transparent',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              🏃‍♂️ Exercise
             </Link>
             
             <Link

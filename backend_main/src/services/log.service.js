@@ -277,3 +277,94 @@ export const getAllAdherenceLogs = async () => {
 export const getAllSnapshotLogs = async () => {
   return logRepository.findAllSnapshotLogs();
 };
+
+/**
+ * Add a new exercise adherence log entry
+ */
+export const addExerciseAdherenceLog = async (data, user) => {
+  if (!data.patient_id || !data.patient_ex_id || !data.status) {
+    throw new Error('patient_id, patient_ex_id, dan status diperlukan');
+  }
+
+  return logRepository.createExerciseAdherenceLog({
+    ...data,
+    logged_by_user_id: user.user_id,
+  });
+};
+
+/**
+ * Get all exercise adherence logs for a patient
+ */
+export const getExerciseAdherenceLogs = async (patientId) => {
+  if (!patientId) {
+    throw new Error('Patient ID diperlukan');
+  }
+  return logRepository.findExerciseAdherenceLogs(patientId);
+};
+
+/**
+ * Update an exercise adherence log
+ */
+export const updateExerciseAdherenceLog = async (logId, data) => {
+  return logRepository.updateExerciseAdherenceLog(logId, data);
+};
+
+/**
+ * Delete an exercise adherence log
+ */
+export const deleteExerciseAdherenceLog = async (logId) => {
+  return logRepository.deleteExerciseAdherenceLog(logId);
+};
+
+/**
+ * Get all exercise adherence logs (admin)
+ */
+export const getAllExerciseAdherenceLogs = async () => {
+  return logRepository.findAllExerciseAdherenceLogs();
+};
+
+/**
+ * Add a new nutrition adherence log entry
+ */
+export const addNutritionAdherenceLog = async (data, user) => {
+  if (!data.patient_id || !data.patient_food_id || !data.status) {
+    throw new Error('patient_id, patient_food_id, dan status diperlukan');
+  }
+
+  return logRepository.createNutritionAdherenceLog({
+    ...data,
+    logged_by_user_id: user.user_id,
+  });
+};
+
+/**
+ * Get all nutrition adherence logs for a patient
+ */
+export const getNutritionAdherenceLogs = async (patientId) => {
+  if (!patientId) {
+    throw new Error('Patient ID diperlukan');
+  }
+  return logRepository.findNutritionAdherenceLogs(patientId);
+};
+
+/**
+ * Update a nutrition adherence log
+ */
+export const updateNutritionAdherenceLog = async (logId, data) => {
+  return logRepository.updateNutritionAdherenceLog(logId, data);
+};
+
+/**
+ * Delete a nutrition adherence log
+ */
+export const deleteNutritionAdherenceLog = async (logId) => {
+  return logRepository.deleteNutritionAdherenceLog(logId);
+};
+
+/**
+ * Get all nutrition adherence logs (admin)
+ */
+export const getAllNutritionAdherenceLogs = async () => {
+  return logRepository.findAllNutritionAdherenceLogs();
+};
+

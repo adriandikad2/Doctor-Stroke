@@ -14,8 +14,45 @@ export const createSlot = async (slotData, user) => {
     throw new Error('Hanya dokter/terapis yang bisa membuat slot');
   }
 
+  const startTime = new Date(slotData.start_time);
+  const requestedEnd = slotData.end_time ? new Date(slotData.end_time) : null;
+
+  if (Number.isNaN(startTime.getTime())) {
+    throw new Error('start_time tidak valid');
+  }
+
+  // Enforce 30-minute slots and clinic hours 09:00 - 21:00
+  const endTime = requestedEnd && !Number.isNaN(requestedEnd.getTime())
+    ? requestedEnd
+    : new Date(startTime.getTime() + 30 * 60 * 1000);
+
+  const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+  const startsOnHalfHour = startTime.getMinutes() % 30 === 0;
+  const endsOnHalfHour = endTime.getMinutes() % 30 === 0;
+  const startsWithinWindow = startTime.getHours() >= 9 && startTime.getHours() <= 20;
+  const endsWithinWindow = endTime.getHours() < 21 || (endTime.getHours() === 21 && endTime.getMinutes() === 0);
+  const sameDay = startTime.toDateString() === endTime.toDateString();
+
+  if (!startsOnHalfHour || !endsOnHalfHour) {
+    throw new Error('Slot harus dimulai pada menit 00 atau 30');
+  }
+
+  if (durationMinutes !== 30) {
+    throw new Error('Durasi slot harus 30 menit');
+  }
+
+  if (!startsWithinWindow || !endsWithinWindow) {
+    throw new Error('Slot harus berada di antara pukul 09:00 - 21:00');
+  }
+
+  if (!sameDay) {
+    throw new Error('Slot harus berada pada hari yang sama');
+  }
+
   return appointmentRepository.createAvailabilitySlot({
     ...slotData,
+    start_time: startTime,
+    end_time: endTime,
     medical_user_id: user.user_id,
   });
 };

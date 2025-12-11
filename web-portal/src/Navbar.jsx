@@ -200,7 +200,6 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
         <img src={logoNew} alt="Doctor Stroke Logo" />
         <div className="brand-title">
           <strong>Doctor Stroke</strong>
-          <span>Post-Stroke Care</span>
         </div>
       </div>
 
@@ -228,15 +227,21 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
             </button>
             <button 
               className="btn-ghost" 
-              onClick={() => { onNavigate('progress'); setMobileMenuOpen(false); }}
-            >
-              📈 Progress
-            </button>
-            <button 
-              className="btn-ghost" 
               onClick={() => { onNavigate('scheduler'); setMobileMenuOpen(false); }}
             >
               📅 Scheduler
+            </button>
+            <button 
+              className="btn-ghost" 
+              onClick={() => { onNavigate('medication'); setMobileMenuOpen(false); }}
+            >
+              💊 Medications
+            </button>
+            <button 
+              className="btn-ghost" 
+              onClick={() => { onNavigate('adherence'); setMobileMenuOpen(false); }}
+            >
+              📊 Adherence
             </button>
             <button 
               className="btn-ghost" 
@@ -257,20 +262,6 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
           </button>
         ) : (
           <>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 12px',
-              background: 'rgba(131, 133, 204, 0.1)',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: '600',
-              color: 'var(--primary)',
-              textTransform: 'capitalize'
-            }}>
-              {user?.role === 'doctor' ? '👨‍⚕️' : user?.role === 'therapist' ? '🏥' : '👤'} {user?.role}
-            </div>
             <button className="btn-primary" onClick={() => { onSignOut(); setMobileMenuOpen(false); }}>
               Sign out
             </button>

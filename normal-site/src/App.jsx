@@ -5,7 +5,9 @@ import Home from './components/Home';
 import Patients from './components/Patients';
 import Diet from './components/Diet';
 import Medications from './components/Medications';
+import Exercises from './components/Exercises';
 import Progress from './components/Progress';
+import Appointments from './components/Appointments';
 import EmergencyButton from './components/EmergencyButton';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './styles.css';
@@ -47,12 +49,14 @@ const AppContent = () => {
       minHeight: '100vh', 
       backgroundColor: '#f6fbff',
       color: '#000000',
-      fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'
+      fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <Navbar />
       <EmergencyButton />
       
-      <main className="main-content">
+      <main className="main-content" style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route 
@@ -80,10 +84,26 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/appointments" 
+            element={
+              <ProtectedRoute>
+                <Appointments />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/progress" 
             element={
               <ProtectedRoute>
                 <Progress />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/exercises" 
+            element={
+              <ProtectedRoute>
+                <Exercises />
               </ProtectedRoute>
             } 
           />
@@ -94,7 +114,10 @@ const AppContent = () => {
         padding: '20px',
         textAlign: 'center',
         backgroundColor: 'var(--color-card, #ffffff)',
-        borderTop: '1px solid var(--color-border, #e2e8f0)'
+        borderTop: '1px solid var(--color-border, #e2e8f0)',
+        marginTop: 'auto',
+        color: '#6b7280',
+        fontSize: '14px'
       }}>
         © {new Date().getFullYear()} Doctor Stroke — Patient & Caregiver Portal
       </footer>

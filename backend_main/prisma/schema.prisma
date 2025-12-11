@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {
@@ -8,24 +9,30 @@ datasource db {
 }
 
 model users {
-  user_id             String                       @id @default(uuid()) @db.Uuid
-  email               String                       @unique
-  password_hash       String
-  role                user_role_enum
-  created_at          DateTime                     @default(now())
-  updated_at          DateTime                     @updatedAt
-  booked_appointments appointments[]
-  availability_slots  availability_slots[]
-  doctor_profile      doctor_profiles?
-  family_profile      family_profiles?
-  meal_logs           meal_logs[]
-  adherence_logs      medication_adherence_logs[]
-  nutrition_updates   nutrition_profiles[]
-  care_team_links     patient_care_team[]
-  snapshots           patient_progress_snapshots[]
-  prescriptions       prescriptions[]
-  progress_logs       progress_logs[]
-  therapist_profile   therapist_profiles?
+  user_id                      String                       @id @default(uuid()) @db.Uuid
+  email                        String                       @unique
+  password_hash                String
+  role                         user_role_enum
+  created_at                   DateTime                     @default(now())
+  updated_at                   DateTime                     @updatedAt
+  booked_appointments          appointments[]
+  availability_slots           availability_slots[]
+  doctor_profile               doctor_profiles?
+  family_profile               family_profiles?
+  meal_logs                    meal_logs[]
+  adherence_logs               medication_adherence_logs[]
+  nutrition_updates            nutrition_profiles[]
+  care_team_links              patient_care_team[]
+  snapshots                    patient_progress_snapshots[]
+  prescriptions                prescriptions[]
+  progress_logs                progress_logs[]
+  therapist_profile            therapist_profiles?
+  patient_medications          patient_medication_catalogs[]
+  medication_adherence_logs_v2 medication_adherence_logs_v2[]
+  patient_exercises            patient_exercise_catalogs[]
+  exercise_adherence_logs      exercise_adherence_logs[]
+  patient_foods                patient_nutrition_catalogs[]
+  nutrition_adherence_logs     nutrition_adherence_logs[]
 
   @@map("users")
 }
@@ -72,25 +79,31 @@ model family_profiles {
 }
 
 model patient_profiles {
-  patient_id      String    @id @default(uuid()) @db.Uuid
-  name            String
-  date_of_birth   DateTime  @db.Date
-  gender          gender_enum?
-  medical_history String?
-  unique_code     String    @unique @db.VarChar(20) // Format: PASIEN-XXXXXX
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
-  documents   Json?
+  patient_id                String    @id @default(uuid()) @db.Uuid
+  name                      String
+  date_of_birth             DateTime  @db.Date
+  gender                    gender_enum?
+  medical_history           String?
+  unique_code               String    @unique @db.VarChar(20) // Format: PASIEN-XXXXXX
+  created_at                DateTime  @default(now())
+  updated_at                DateTime  @updatedAt
+  documents                 Json?
 
   // --- Relasi (Hal-hal yang "Dimiliki" Pasien) ---
-  care_team_links     patient_care_team[]
-  appointments        appointments[]
-  prescriptions       prescriptions[]
-  adherence_logs      medication_adherence_logs[]
-  nutrition_profile   nutrition_profiles? // Relasi 1-ke-1
-  meal_logs           meal_logs[]
-  snapshots           patient_progress_snapshots[]
-  progress_logs       progress_logs[]
+  care_team_links           patient_care_team[]
+  appointments              appointments[]
+  prescriptions             prescriptions[]
+  adherence_logs            medication_adherence_logs[]
+  nutrition_profile         nutrition_profiles? // Relasi 1-ke-1
+  meal_logs                 meal_logs[]
+  snapshots                 patient_progress_snapshots[]
+  progress_logs             progress_logs[]
+  patient_medications       patient_medication_catalogs[]
+  medication_adherence_logs_v2 medication_adherence_logs_v2[]
+  patient_exercises         patient_exercise_catalogs[]
+  exercise_adherence_logs   exercise_adherence_logs[]
+  patient_foods             patient_nutrition_catalogs[]
+  nutrition_adherence_logs  nutrition_adherence_logs[]
 
   @@map("patient_profiles")
 }
@@ -247,6 +260,154 @@ model medication_interactions {
   @@map("medication_interactions")
 }
 
+model medication_catalogs {
+  catalog_id         String                        @id @default(uuid()) @db.Uuid
+  medication_name    String
+  description        String
+  dosage_standard    String
+  side_effects       String?
+  contraindications  String?
+  image_url          String?
+  manufacturer       String?
+  registration_no    String?
+  product_category   String? // Golongan produk
+  created_at         DateTime                      @default(now())
+  patient_medications patient_medication_catalogs[]
+
+  @@map("medication_catalogs")
+}
+
+model patient_medication_catalogs {
+  patient_med_id  String               @id @default(uuid()) @db.Uuid
+  patient_id      String               @db.Uuid
+  catalog_id      String               @db.Uuid
+  doctor_user_id  String               @db.Uuid
+  prescribed_date DateTime             @default(now())
+  created_at      DateTime             @default(now())
+  patient         patient_profiles     @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  medication      medication_catalogs  @relation(fields: [catalog_id], references: [catalog_id], onDelete: Cascade)
+  doctor_user     users                @relation(fields: [doctor_user_id], references: [user_id], onDelete: SetNull)
+  adherence_logs  medication_adherence_logs_v2[]
+
+  @@unique([patient_id, catalog_id])
+  @@map("patient_medication_catalogs")
+}
+
+model medication_adherence_logs_v2 {
+  adherence_id       String                        @id @default(uuid()) @db.Uuid
+  patient_med_id     String                        @db.Uuid
+  patient_id         String                        @db.Uuid
+  logged_by_user_id  String                        @db.Uuid
+  status             medication_adherence_status_enum
+  scheduled_time     DateTime?                     @db.Timestamp(6)
+  taken_time         DateTime?                     @db.Timestamp(6)
+  notes              String?
+  created_at         DateTime                      @default(now())
+  logged_by_user     users                         @relation(fields: [logged_by_user_id], references: [user_id], onDelete: SetNull)
+  patient            patient_profiles              @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_medication patient_medication_catalogs   @relation(fields: [patient_med_id], references: [patient_med_id], onDelete: Cascade)
+
+  @@map("medication_adherence_logs_v2")
+}
+
+model exercise_catalogs {
+  catalog_id       String                     @id @default(uuid()) @db.Uuid
+  exercise_name    String
+  description      String
+  specialization   therapist_specialization_enum
+  frequency_per_day Int
+  duration_minutes Int?
+  image_url        String?
+  tutorial_url     String?
+  instructions     String?
+  created_at       DateTime                   @default(now())
+  patient_exercises patient_exercise_catalogs[]
+
+  @@map("exercise_catalogs")
+}
+
+model patient_exercise_catalogs {
+  patient_ex_id    String                @id @default(uuid()) @db.Uuid
+  patient_id       String                @db.Uuid
+  catalog_id       String                @db.Uuid
+  therapist_user_id String               @db.Uuid
+  prescribed_date  DateTime              @default(now())
+  created_at       DateTime              @default(now())
+  patient          patient_profiles      @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  exercise         exercise_catalogs     @relation(fields: [catalog_id], references: [catalog_id], onDelete: Cascade)
+  therapist_user   users                 @relation(fields: [therapist_user_id], references: [user_id], onDelete: SetNull)
+  adherence_logs   exercise_adherence_logs[]
+
+  @@unique([patient_id, catalog_id])
+  @@map("patient_exercise_catalogs")
+}
+
+model exercise_adherence_logs {
+  adherence_id      String                @id @default(uuid()) @db.Uuid
+  patient_ex_id     String                @db.Uuid
+  patient_id        String                @db.Uuid
+  logged_by_user_id String                @db.Uuid
+  status            exercise_adherence_status_enum @default(taken)
+  scheduled_date    DateTime?             @db.Date
+  actual_date       DateTime?             @db.Date
+  notes             String?
+  created_at        DateTime              @default(now())
+  logged_by_user    users                 @relation(fields: [logged_by_user_id], references: [user_id], onDelete: SetNull)
+  patient           patient_profiles      @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_exercise  patient_exercise_catalogs @relation(fields: [patient_ex_id], references: [patient_ex_id], onDelete: Cascade)
+
+  @@map("exercise_adherence_logs")
+}
+
+model nutrition_food_catalogs {
+  catalog_id       String               @id @default(uuid()) @db.Uuid
+  food_name        String
+  description      String
+  food_category    nutrition_food_category_enum
+  meal_type        meal_type_enum
+  image_url        String?
+  calories         Int?
+  sodium_mg        Int?
+  fiber_g          Int?
+  created_at       DateTime             @default(now())
+  patient_foods    patient_nutrition_catalogs[]
+
+  @@map("nutrition_food_catalogs")
+}
+
+model patient_nutrition_catalogs {
+  patient_food_id  String              @id @default(uuid()) @db.Uuid
+  patient_id       String              @db.Uuid
+  catalog_id       String              @db.Uuid
+  doctor_user_id   String              @db.Uuid
+  prescribed_date  DateTime            @default(now())
+  created_at       DateTime            @default(now())
+  patient          patient_profiles    @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  food             nutrition_food_catalogs @relation(fields: [catalog_id], references: [catalog_id], onDelete: Cascade)
+  doctor_user      users               @relation(fields: [doctor_user_id], references: [user_id], onDelete: SetNull)
+  adherence_logs   nutrition_adherence_logs[]
+
+  @@unique([patient_id, catalog_id])
+  @@map("patient_nutrition_catalogs")
+}
+
+model nutrition_adherence_logs {
+  adherence_id      String              @id @default(uuid()) @db.Uuid
+  patient_food_id   String              @db.Uuid
+  patient_id        String              @db.Uuid
+  logged_by_user_id String              @db.Uuid
+  status            nutrition_adherence_status_enum @default(taken)
+  scheduled_date    DateTime?           @db.Date
+  actual_date       DateTime?           @db.Date
+  notes             String?
+  created_at        DateTime            @default(now())
+  logged_by_user    users               @relation(fields: [logged_by_user_id], references: [user_id], onDelete: SetNull)
+  patient           patient_profiles    @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  patient_food      patient_nutrition_catalogs @relation(fields: [patient_food_id], references: [patient_food_id], onDelete: Cascade)
+
+  @@map("nutrition_adherence_logs")
+}
+
 enum gender_enum {
   MALE
   FEMALE
@@ -287,6 +448,23 @@ enum medication_adherence_status_enum {
   taken
   missed
   delayed
+}
+
+enum exercise_adherence_status_enum {
+  taken
+  missed
+}
+
+enum nutrition_adherence_status_enum {
+  taken
+  missed
+}
+
+enum nutrition_food_category_enum {
+  vegetable
+  main_course
+  snack
+  beverages
 }
 
 enum meal_type_enum {

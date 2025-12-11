@@ -11,9 +11,15 @@ export const handleGetPatientSummary = async (req, res) => {
       data: summary,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
+    console.error('[Insight Controller] Error:', error.message);
+    
+    // Return 500 only for server errors, not for API quota issues
+    const statusCode = error.message?.includes('Gemini') ? 200 : 500;
+    
+    res.status(statusCode).json({
+      success: statusCode === 200, // Consider fallback as successful
       message: error.message || 'Gagal membuat ringkasan AI',
+      data: error.data || null, // Include fallback data if available
     });
   }
 };

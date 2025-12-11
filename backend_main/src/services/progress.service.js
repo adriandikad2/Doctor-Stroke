@@ -1,20 +1,21 @@
-const progressRepository = require('../repositories/progress.repository');
-const patientRepository = require('../repositories/patient.repository');
-const adherenceRepository = require('../repositories/adherence.repository');
+import * as progressRepository from '../repositories/progress.repository.js';
+import * as patientRepository from '../repositories/patient.repository.js';
+import * as adherenceRepository from '../repositories/adherence.repository.js';
 
 const ensurePatientLink = async (user, patient_id) => {
   if (user.role === 'admin') {
     return true;
   }
 
-  const isLinked = await patientRepository.isUserLinkedToPatient(user.userId, patient_id);
+  const userId = user.userId || user.user_id;
+  const isLinked = await patientRepository.isUserLinkedToPatient(userId, patient_id);
   if (!isLinked) {
     throw new Error('Access denied: Not linked to patient');
   }
   return true;
 };
 
-const recordSnapshot = async (payload, user) => {
+export const recordSnapshot = async (payload, user) => {
   if (!payload.patient_id) {
     throw new Error('Patient ID is required');
   }
@@ -40,12 +41,12 @@ const recordSnapshot = async (payload, user) => {
   return snapshot;
 };
 
-const getSnapshotsForPatient = async (patient_id, user, filters = {}) => {
+export const getSnapshotsForPatient = async (patient_id, user, filters = {}) => {
   await ensurePatientLink(user, patient_id);
   return progressRepository.getSnapshotsByPatient(patient_id, filters);
 };
 
-const buildReport = async (patient_id, user, filters = {}) => {
+export const buildReport = async (patient_id, user, filters = {}) => {
   const snapshots = await getSnapshotsForPatient(patient_id, user, filters);
 
   if (!snapshots.length) {
@@ -115,7 +116,7 @@ const buildReport = async (patient_id, user, filters = {}) => {
   };
 };
 
-const generatePredictiveAlerts = async (patient_id, user) => {
+export const generatePredictiveAlerts = async (patient_id, user) => {
   await ensurePatientLink(user, patient_id);
 
   const recentSnapshots = await progressRepository.getSnapshotsWithinDays(patient_id, 7);
@@ -171,7 +172,7 @@ const generatePredictiveAlerts = async (patient_id, user) => {
   return alerts;
 };
 
-module.exports = {
+export default {
   recordSnapshot,
   getSnapshotsForPatient,
   buildReport,

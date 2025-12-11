@@ -5,6 +5,10 @@ import SignIn from './SignIn';
 const Home = () => {
   const { isAuthenticated } = useAuth();
   const [showSignIn, setShowSignIn] = React.useState(false);
+  const [insight, setInsight] = React.useState('');
+  const [patients, setPatients] = React.useState([]);
+  const [selectedPatientId, setSelectedPatientId] = React.useState('');
+  const { authToken } = useAuth();
 
   const handleSignInClose = () => {
     setShowSignIn(false);
@@ -33,6 +37,17 @@ const Home = () => {
       }}>
         Use the navigation menu above to access patient management tools, diet plans, medications, and progress tracking.
       </p>
+      <div style={{ maxWidth: 900, margin: '0 auto', marginBottom: 24, textAlign: 'left' }}>
+        <InsightPanel
+          authToken={authToken}
+          insight={insight}
+          setInsight={setInsight}
+          patients={patients}
+          setPatients={setPatients}
+          selectedPatientId={selectedPatientId}
+          setSelectedPatientId={setSelectedPatientId}
+        />
+      </div>
       <div style={{
         maxWidth: '600px',
         margin: '0 auto',
@@ -121,3 +136,71 @@ const Home = () => {
 };
 
 export default Home;
+
+function InsightPanel({ authToken, insight, setInsight, patients, setPatients, selectedPatientId, setSelectedPatientId }) {
+  React.useEffect(() => {
+    if (!authToken) return;
+    const loadPatients = async () => {
+      try {
+        const res = await fetch('/api/patients/me', { headers: { Authorization: `Bearer ${authToken}` } });
+        const data = await res.json();
+        if (res.ok) {
+          const list = data.data || [];
+          setPatients(list);
+          const pid = list[0]?.patient_id || '';
+          setSelectedPatientId(pid);
+          if (pid) fetchInsight(pid);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    loadPatients();
+  }, [authToken]);
+
+  const fetchInsight = async (patientId) => {
+    if (!patientId) {
+      setInsight('');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/insights/patient/${patientId}/summary`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (res.ok) setInsight(data.data || '');
+      else setInsight('');
+    } catch {
+      setInsight('');
+    }
+  };
+
+  return (
+    <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div>
+          <div style={{ fontWeight: 700, color: '#0f172a' }}>AI Insight (Gemini)</div>
+          <div style={{ fontSize: 12, color: '#64748b' }}>Ringkasan kondisi terbaru pasien</div>
+        </div>
+        <select
+          value={selectedPatientId}
+          onChange={(e) => {
+            setSelectedPatientId(e.target.value);
+            fetchInsight(e.target.value);
+          }}
+          style={{ padding: 8, borderRadius: 8, border: '1px solid #e5e7eb', backgroundColor: '#fff' }}
+        >
+          <option value="">-- Select Patient --</option>
+          {patients.map((p) => (
+            <option key={p.patient_id} value={p.patient_id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div style={{ color: '#334155', fontSize: 14, lineHeight: 1.6 }}>
+        {insight || 'Belum ada insight untuk pasien ini.'}
+      </div>
+    </div>
+  );
+}

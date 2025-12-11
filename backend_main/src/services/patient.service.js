@@ -83,19 +83,45 @@ export const linkMedicalTeamToPatient = async (uniqueCode, user) => {
     throw new Error('Family members cannot link themselves using a patient code');
   }
 
-  // Find patient by unique code
-  const patient = await patientRepository.findPatientByCode(uniqueCode);
-  if (!patient) {
-    throw new Error('Patient not found with the provided code');
-  }
+  // Execute all operations in a single transaction to avoid connection pool issues
+  const result = await prisma.$transaction(async (tx) => {
+    // Find patient by unique code within the transaction
+    const patient = await tx.patient_profiles.findUnique({
+      where: { unique_code: uniqueCode },
+    });
 
-  // Execute transaction: link the user to the patient
-  await prisma.$transaction(async (tx) => {
-    await patientRepository.linkUserToPatient(user.user_id, patient.patient_id, tx);
+    if (!patient) {
+      throw new Error('Patient not found with the provided code');
+    }
+
+    // Link the user to the patient
+    await tx.patient_care_team.create({
+      data: {
+        user_id: user.user_id,
+        patient_id: patient.patient_id,
+      },
+    });
+
+    // Return the updated patient with care team within the same transaction
+    return tx.patient_profiles.findUnique({
+      where: { patient_id: patient.patient_id },
+      include: {
+        care_team_links: {
+          include: {
+            user: {
+              include: {
+                doctor_profile: true,
+                therapist_profile: true,
+                family_profile: true,
+              },
+            },
+          },
+        },
+      },
+    });
   });
 
-  // Return the updated patient with care team
-  return patientRepository.findPatientById(patient.patient_id);
+  return result;
 };
 
 /**

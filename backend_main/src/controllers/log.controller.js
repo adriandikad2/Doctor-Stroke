@@ -487,3 +487,222 @@ export const handleGetAllSnapshotLogs = async (req, res) => {
     });
   }
 };
+
+/**
+ * Handle creating an exercise adherence log
+ */
+export const handleCreateExerciseAdherenceLog = async (req, res) => {
+  try {
+    const data = req.body;
+    const user = req.user;
+
+    const newLog = await logService.addExerciseAdherenceLog(data, user);
+
+    res.status(201).json({
+      success: true,
+      message: 'Log kepatuhan latihan berhasil dibuat',
+      data: newLog,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal membuat log kepatuhan latihan',
+    });
+  }
+};
+
+/**
+ * Handle getting exercise adherence logs for a patient
+ */
+export const handleGetExerciseAdherenceLogs = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const logs = await logService.getExerciseAdherenceLogs(patientId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan latihan pasien berhasil diambil',
+      data: logs,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil log kepatuhan latihan',
+    });
+  }
+};
+
+/**
+ * Handle updating an exercise adherence log
+ */
+export const handleUpdateExerciseAdherenceLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const data = req.body;
+
+    const updatedLog = await logService.updateExerciseAdherenceLog(logId, data);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan latihan berhasil diperbarui',
+      data: updatedLog,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal memperbarui log kepatuhan latihan',
+    });
+  }
+};
+
+/**
+ * Handle deleting an exercise adherence log
+ */
+export const handleDeleteExerciseAdherenceLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+
+    await logService.deleteExerciseAdherenceLog(logId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan latihan berhasil dihapus',
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal menghapus log kepatuhan latihan',
+    });
+  }
+};
+
+/**
+ * Handle getting all exercise adherence logs (admin)
+ */
+export const handleGetAllExerciseAdherenceLogs = async (req, res) => {
+  try {
+    const logs = await logService.getAllExerciseAdherenceLogs();
+
+    res.status(200).json({
+      success: true,
+      message: 'Semua log kepatuhan latihan berhasil diambil',
+      data: logs,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil log kepatuhan latihan',
+    });
+  }
+};
+
+/**
+ * Handle creating a nutrition adherence log
+ */
+export const handleCreateNutritionAdherenceLog = async (req, res) => {
+  try {
+    const data = req.body;
+    const user = req.user;
+
+    const newLog = await logService.addNutritionAdherenceLog(data, user);
+
+    res.status(201).json({
+      success: true,
+      message: 'Log kepatuhan nutrisi berhasil dibuat',
+      data: newLog,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal membuat log kepatuhan nutrisi',
+    });
+  }
+};
+
+/**
+ * Handle getting nutrition adherence logs for a patient
+ */
+export const handleGetNutritionAdherenceLogs = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const logs = await logService.getNutritionAdherenceLogs(patientId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan nutrisi pasien berhasil diambil',
+      data: logs,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil log kepatuhan nutrisi',
+    });
+  }
+};
+
+/**
+ * Handle updating a nutrition adherence log
+ */
+export const handleUpdateNutritionAdherenceLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const data = req.body;
+
+    const updatedLog = await logService.updateNutritionAdherenceLog(logId, data);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan nutrisi berhasil diperbarui',
+      data: updatedLog,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal memperbarui log kepatuhan nutrisi',
+    });
+  }
+};
+
+/**
+ * Handle deleting a nutrition adherence log
+ */
+export const handleDeleteNutritionAdherenceLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+
+    await logService.deleteNutritionAdherenceLog(logId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Log kepatuhan nutrisi berhasil dihapus',
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal menghapus log kepatuhan nutrisi',
+    });
+  }
+};
+
+/**
+ * Handle getting all nutrition adherence logs (admin)
+ */
+export const handleGetAllNutritionAdherenceLogs = async (req, res) => {
+  try {
+    const logs = await logService.getAllNutritionAdherenceLogs();
+
+    res.status(200).json({
+      success: true,
+      message: 'Semua log kepatuhan nutrisi berhasil diambil',
+      data: logs,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Gagal mengambil log kepatuhan nutrisi',
+    });
+  }
+};
+

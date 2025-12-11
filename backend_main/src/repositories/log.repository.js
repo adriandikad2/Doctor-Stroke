@@ -437,3 +437,218 @@ export const findAllSnapshotLogs = async () => {
     orderBy: { recorded_at: 'desc' },
   });
 };
+
+/**
+ * Create an exercise adherence log entry
+ */
+export const createExerciseAdherenceLog = async (data) => {
+  return prisma.exercise_adherence_logs.create({
+    data,
+    include: {
+      patient: true,
+      patient_exercise: {
+        include: {
+          exercise: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Find all exercise adherence logs for a patient
+ */
+export const findExerciseAdherenceLogs = async (patientId) => {
+  return prisma.exercise_adherence_logs.findMany({
+    where: { patient_id: patientId },
+    include: {
+      patient: true,
+      patient_exercise: {
+        include: {
+          exercise: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Update an exercise adherence log
+ */
+export const updateExerciseAdherenceLog = async (logId, data) => {
+  return prisma.exercise_adherence_logs.update({
+    where: { adherence_id: logId },
+    data,
+    include: {
+      patient: true,
+      patient_exercise: {
+        include: {
+          exercise: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Delete an exercise adherence log
+ */
+export const deleteExerciseAdherenceLog = async (logId) => {
+  return prisma.exercise_adherence_logs.delete({
+    where: { adherence_id: logId },
+  });
+};
+
+/**
+ * Find all exercise adherence logs (admin)
+ */
+export const findAllExerciseAdherenceLogs = async () => {
+  return prisma.exercise_adherence_logs.findMany({
+    include: {
+      patient: true,
+      patient_exercise: {
+        include: {
+          exercise: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Create a nutrition adherence log entry
+ */
+export const createNutritionAdherenceLog = async (data) => {
+  return prisma.nutrition_adherence_logs.create({
+    data,
+    include: {
+      patient: true,
+      patient_food: {
+        include: {
+          food: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Find all nutrition adherence logs for a patient
+ */
+export const findNutritionAdherenceLogs = async (patientId) => {
+  return prisma.nutrition_adherence_logs.findMany({
+    where: { patient_id: patientId },
+    include: {
+      patient: true,
+      patient_food: {
+        include: {
+          food: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
+/**
+ * Update a nutrition adherence log
+ */
+export const updateNutritionAdherenceLog = async (logId, data) => {
+  return prisma.nutrition_adherence_logs.update({
+    where: { adherence_id: logId },
+    data,
+    include: {
+      patient: true,
+      patient_food: {
+        include: {
+          food: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Delete a nutrition adherence log
+ */
+export const deleteNutritionAdherenceLog = async (logId) => {
+  return prisma.nutrition_adherence_logs.delete({
+    where: { adherence_id: logId },
+  });
+};
+
+/**
+ * Find all nutrition adherence logs (admin)
+ */
+export const findAllNutritionAdherenceLogs = async () => {
+  return prisma.nutrition_adherence_logs.findMany({
+    include: {
+      patient: true,
+      patient_food: {
+        include: {
+          food: true,
+        },
+      },
+      logged_by_user: {
+        include: {
+          doctor_profile: true,
+          therapist_profile: true,
+          family_profile: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+};
+

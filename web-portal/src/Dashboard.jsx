@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { patientAPI, appointmentAPI, logAPI } from './utils/api';
+import { patientAPI, appointmentAPI, logAPI, insightAPI, nutritionAPI } from './utils/api';
 import PrescriptionEntry from './components/PrescriptionEntry';
 import MedicalHistoryLogger from './components/MedicalHistoryLogger';
+import AIInsightPanel from './components/AIInsightPanel';
+import ExerciseCatalogEntry from './components/ExerciseCatalogEntry';
 
 export default function Dashboard({ user }) {
   const [patients, setPatients] = useState([]);
@@ -11,6 +13,16 @@ export default function Dashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [insight, setInsight] = useState('');
+  const [insightWarning, setInsightWarning] = useState('');
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [progressError, setProgressError] = useState('');
+  const [progressTab, setProgressTab] = useState('adherence');
+  const [adherenceData, setAdherenceData] = useState([]);
+  const [progressLogs, setProgressLogs] = useState([]);
+  const [snapshotData, setSnapshotData] = useState([]);
+  const [nutritionProfile, setNutritionProfile] = useState(null);
+  const [mealLogs, setMealLogs] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -88,9 +100,47 @@ export default function Dashboard({ user }) {
     }
   };
 
+  const groupAdherenceByMonth = (logs) => {
+    const months = {};
+    logs.forEach(log => {
+      const date = new Date(log.logged_date || log.created_at);
+      const monthKey = date.toLocaleString('default', { month: 'short' });
+
+      if (!months[monthKey]) {
+        months[monthKey] = { month: monthKey, total: 0, taken: 0 };
+      }
+      months[monthKey].total += 1;
+      if (log.taken === true || log.taken === 'true') {
+        months[monthKey].taken += 1;
+      }
+    });
+
+    return Object.values(months)
+      .slice(0, 6)
+      .map(m => ({
+        ...m,
+        rate: m.total > 0 ? Math.round((m.taken / m.total) * 100) : 0
+      }));
+  };
+
+  const getCurrentAdherenceRate = () => {
+    if (adherenceData.length === 0) return 0;
+    const lastMonth = adherenceData[adherenceData.length - 1];
+    return lastMonth.rate || 0;
+  };
+
+  const getAverageAdherenceRate = () => {
+    if (adherenceData.length === 0) return 0;
+    const sum = adherenceData.reduce((acc, item) => acc + (item.rate || 0), 0);
+    return Math.round(sum / adherenceData.length);
+  };
+
   useEffect(() => {
     if (selectedPatient?.patient_id) {
       fetchMedicalHistory();
+      fetchInsight(selectedPatient.patient_id);
+      fetchProgressData();
+      fetchNutritionData();
     }
   }, [selectedPatient, refreshTrigger]);
 
@@ -114,6 +164,97 @@ export default function Dashboard({ user }) {
 
     return () => clearInterval(interval);
   }, []);
+
+  const fetchInsight = async (patientId) => {
+    try {
+      setInsightWarning('');
+      const res = await insightAPI.getPatientSummary(patientId);
+      const summaryText = typeof res?.data === 'string'
+        ? res.data
+        : res?.data?.summary || res?.data?.error || '';
+
+      if (res?.message?.toLowerCase?.().includes('429') || res?.message?.toLowerCase?.().includes('quota')) {
+        setInsightWarning('Gemini quota reached, menampilkan konteks terakhir. Coba lagi dalam beberapa saat.');
+      }
+
+      if (summaryText) {
+        setInsight(summaryText);
+      } else {
+        setInsight('');
+      }
+    } catch (err) {
+      console.error('Error fetching insight', err);
+      setInsightWarning(err.message?.includes('429') ? 'Gemini sementara penuh, coba lagi sebentar lagi.' : 'Gagal memuat insight AI.');
+      setInsight('');
+    }
+  };
+
+  const fetchProgressData = async () => {
+    if (!selectedPatient?.patient_id) return;
+
+    try {
+      setProgressLoading(true);
+      setProgressError('');
+
+      const [adherenceResponse, progressResponse, snapshotResponse] = await Promise.all([
+        logAPI.adherence.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+        logAPI.progress.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+        logAPI.snapshot.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+      ]);
+
+      if (adherenceResponse.success && adherenceResponse.data) {
+        setAdherenceData(groupAdherenceByMonth(adherenceResponse.data));
+      } else {
+        setAdherenceData([]);
+      }
+
+      if (progressResponse.success && progressResponse.data) {
+        setProgressLogs(progressResponse.data);
+      } else {
+        setProgressLogs([]);
+      }
+
+      if (snapshotResponse.success && snapshotResponse.data) {
+        setSnapshotData(snapshotResponse.data);
+      } else {
+        setSnapshotData([]);
+      }
+    } catch (err) {
+      console.error('Error fetching progress data:', err);
+      setProgressError(err.message || 'Failed to fetch progress data');
+      setAdherenceData([]);
+      setProgressLogs([]);
+      setSnapshotData([]);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  const fetchNutritionData = async () => {
+    if (!selectedPatient?.patient_id) return;
+    try {
+      const [profileResp, mealsResp] = await Promise.all([
+        nutritionAPI.getProfile(selectedPatient.patient_id).catch(() => ({ success: false })),
+        logAPI.meal.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+      ]);
+
+      if (profileResp.success && profileResp.data) {
+        setNutritionProfile(profileResp.data);
+      } else {
+        setNutritionProfile(null);
+      }
+
+      if (mealsResp.success && mealsResp.data) {
+        setMealLogs(mealsResp.data);
+      } else {
+        setMealLogs([]);
+      }
+    } catch (err) {
+      console.error('Error fetching nutrition data', err);
+      setNutritionProfile(null);
+      setMealLogs([]);
+    }
+  };
 
   if (loading) {
     return (
@@ -452,6 +593,108 @@ export default function Dashboard({ user }) {
           color: var(--color-muted-2);
         }
 
+        .progress-tabs {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 16px;
+          border-bottom: 2px solid var(--color-border);
+          overflow-x: auto;
+          padding-bottom: 8px;
+        }
+
+        .progress-tab {
+          padding: 10px 16px;
+          background: transparent;
+          border: none;
+          color: var(--color-muted);
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          border-bottom: 3px solid transparent;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .progress-tab.active {
+          color: var(--primary);
+          border-bottom-color: var(--primary);
+        }
+
+        .chart-card {
+          background: var(--color-card);
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 12px 30px rgba(14, 30, 45, 0.06);
+          border: 1px solid var(--color-border);
+          margin-bottom: 16px;
+        }
+
+        .chart-card h3 {
+          margin: 0 0 12px 0;
+          font-size: 16px;
+          color: var(--primary);
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .stat-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 12px;
+          margin-top: 12px;
+        }
+
+        .stat-item {
+          background: var(--color-bg);
+          padding: 14px;
+          border-radius: 8px;
+          border-left: 4px solid var(--primary);
+        }
+
+        .stat-item .label {
+          font-size: 12px;
+          color: var(--color-muted-2);
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          margin-bottom: 6px;
+        }
+
+        .stat-item .value {
+          font-size: 24px;
+          color: var(--primary);
+          font-weight: 700;
+          margin: 0;
+        }
+
+        .bar-row {
+          margin-bottom: 10px;
+        }
+
+        .bar-row .title {
+          display: flex;
+          justify-content: space-between;
+          font-size: 12px;
+          color: var(--color-muted-2);
+          margin-bottom: 4px;
+        }
+
+        .bar-track {
+          width: 100%;
+          height: 8px;
+          background: var(--color-bg);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, var(--blue), var(--teal));
+          border-radius: 4px;
+        }
+
         @media (max-width: 768px) {
           .dashboard {
             padding: 12px;
@@ -473,7 +716,7 @@ export default function Dashboard({ user }) {
       `}</style>
 
       <div className="dashboard-header">
-        <h2>📊 Clinician Dashboard</h2>
+        <h2>Clinical Dashboard</h2>
         <p>Monitor and manage your patients' health status and treatment progress</p>
         
         {/* Patient Selector */}
@@ -561,15 +804,27 @@ export default function Dashboard({ user }) {
             />
           )}
 
+          {/* Exercise Catalog - For Therapists */}
+          {user?.role === 'therapist' && (
+            <ExerciseCatalogEntry 
+              user={user}
+              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          )}
+
+          {/* AI Clinical Insights Panel */}
+          {selectedPatient && (
+            <AIInsightPanel selectedPatient={selectedPatient} />
+          )}
+
           <div className="dashboard-grid">
-            {/* Appointments for Patient */}
             <div className="card">
               <h3><span className="card-icon">📅</span>Upcoming Appointments</h3>
               {appointments.filter(a => a.patient_id === selectedPatient.patient_id).length > 0 ? (
                 appointments.filter(a => a.patient_id === selectedPatient.patient_id).slice(0, 3).map((event) => (
                   <div key={event.appointment_id} className="event-item">
                     <p className="event-title">{event.patient?.name || 'Appointment'}</p>
-                    <p className="event-time">⏰ {new Date(event.created_at).toLocaleString()}</p>
+                    <p className="event-time">⏰ {new Date(event.slot?.start_time || event.start_time || event.created_at).toLocaleString()}</p>
                     <p className="event-location">📍 Status: {event.status}</p>
                   </div>
                 ))
@@ -640,50 +895,209 @@ export default function Dashboard({ user }) {
                 <p style={{ color: 'var(--color-muted-2)', margin: 0 }}>No medical history recorded. Use 🩺 Vital Signs Tracker to add records.</p>
               )}
             </div>
-          </div>
 
-          {/* Recovery Progress Section */}
-          <div style={{ marginBottom: '30px' }}>
-            <h2 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '16px', fontWeight: 700 }}>
-              🎯 Recovery Overview
-            </h2>
-            <div className="progress-container">
-              <div className="progress-card">
-                <p className="progress-title">Overall Status</p>
-                <p className="progress-value">Good</p>
-                <p className="progress-label">Patient is making steady progress</p>
-              </div>
-
-              <div className="progress-card">
-                <p className="progress-title">Last Update</p>
-                <p className="progress-value" style={{ fontSize: '14px' }}>
-                  {new Date().toLocaleDateString()}
-                </p>
-                <p className="progress-label">Updated today</p>
-              </div>
-
-              <div className="progress-card">
-                <p className="progress-title">Care Team</p>
-                <p className="progress-value" style={{ fontSize: '14px' }}>1</p>
-                <p className="progress-label">Care providers assigned</p>
-              </div>
-
-              <div className="progress-card">
-                <p className="progress-title">Actions</p>
-                <button style={{
-                  padding: '8px 12px',
-                  backgroundColor: 'var(--blue)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  View Details →
-                </button>
+            {/* Nutrition Snapshot */}
+            <div className="card">
+              <h3><span className="card-icon">🥗</span>Nutrition Snapshot</h3>
+              {nutritionProfile ? (
+                <div style={{ fontSize: 12, color: 'var(--color-text)', display: 'grid', gap: 6 }}>
+                  <div>Calorie Target: <strong>{nutritionProfile.calorie_target_max || '-'}</strong> kcal</div>
+                  <div>Sodium Limit: <strong>{nutritionProfile.sodium_limit_mg || '-'}</strong> mg</div>
+                  <div>Fiber Target: <strong>{nutritionProfile.fiber_target_g || '-'}</strong> g</div>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--color-muted-2)', margin: 0, fontSize: 12 }}>No nutrition profile available</p>
+              )}
+              <div style={{ marginTop: 10 }}>
+                <p style={{ margin: '0 0 6px 0', color: 'var(--color-muted)', fontSize: 12 }}>Latest meals</p>
+                {mealLogs.length > 0 ? (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    {mealLogs.slice(0, 3).map((meal, idx) => (
+                      <div key={meal.meal_log_id || idx} style={{
+                        padding: '8px',
+                        background: 'var(--color-bg)',
+                        borderRadius: '6px',
+                        borderLeft: '3px solid var(--teal)',
+                        fontSize: 12
+                      }}>
+                        <div style={{ fontWeight: 600 }}>
+                          {new Date(meal.logged_for || meal.created_at).toLocaleDateString()} • {meal.meal_type}
+                        </div>
+                        <div style={{ color: 'var(--color-muted-2)' }}>
+                          {Array.isArray(meal.foods) ? meal.foods.join(', ') : meal.foods}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--color-muted-2)', margin: 0, fontSize: 12 }}>No meals recorded yet.</p>
+                )}
               </div>
             </div>
+          </div>
+
+          {/* Patient Progress & Recovery */}
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '10px', fontWeight: 700, display: 'flex', gap: '8px', alignItems: 'center' }}>
+              📊 Patient Progress & Recovery
+            </h2>
+            <p style={{ margin: '0 0 12px 0', color: 'var(--color-muted-2)', fontSize: 13 }}>
+              Adherence, therapy, dan vital terkini untuk pasien ini. Tambahkan log di Dashboard untuk melihat grafik terisi.
+            </p>
+
+            {progressError && (
+              <div style={{
+                background: '#FEE2E2',
+                color: '#DC2626',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                fontSize: '13px',
+                borderLeft: '4px solid #DC2626'
+              }}>
+                ❌ {progressError}
+              </div>
+            )}
+
+            <div className="progress-tabs">
+              {[
+                { id: 'adherence', label: 'Medication Adherence', icon: '💊' },
+                { id: 'therapy', label: 'Therapy Logs', icon: '🏥' },
+                { id: 'vitals', label: 'Vitals & Snapshots', icon: '❤️' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  className={`progress-tab ${progressTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setProgressTab(tab.id)}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {progressLoading ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-muted-2)' }}>
+                Loading progress data...
+              </div>
+            ) : (
+              <>
+                {progressTab === 'adherence' && (
+                  <div className="chart-card">
+                    <h3>💊 Medication Adherence</h3>
+                    {adherenceData.length > 0 ? (
+                      <>
+                        <div style={{ display: 'grid', gap: '10px', marginBottom: '10px' }}>
+                          {adherenceData.map((item) => (
+                            <div key={item.month} className="bar-row">
+                              <div className="title">
+                                <span>{item.month}</span>
+                                <span>{item.rate}%</span>
+                              </div>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{ width: `${item.rate}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="stat-grid">
+                          <div className="stat-item">
+                            <div className="label">Current Rate</div>
+                            <p className="value">{getCurrentAdherenceRate()}%</p>
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-muted-2)' }}>Bulan terakhir</p>
+                          </div>
+                          <div className="stat-item">
+                            <div className="label">Average</div>
+                            <p className="value">{getAverageAdherenceRate()}%</p>
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-muted-2)' }}>Rata-rata</p>
+                          </div>
+                          <div className="stat-item">
+                            <div className="label">Tracked Doses</div>
+                            <p className="value">{adherenceData.reduce((acc, m) => acc + m.total, 0)}</p>
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-muted-2)' }}>Total catatan</p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-muted-2)', textAlign: 'center' }}>
+                        📊 Belum ada data kepatuhan obat. Tambahkan log di resep/obat.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {progressTab === 'therapy' && (
+                  <div className="chart-card">
+                    <h3>🏥 Therapy Sessions</h3>
+                    {progressLogs.length > 0 ? (
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {progressLogs.map((log, idx) => (
+                          <div key={log.progress_log_id || idx} style={{
+                            padding: '12px',
+                            background: 'var(--color-bg)',
+                            borderRadius: '8px',
+                            borderLeft: '4px solid var(--blue)'
+                          }}>
+                            <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-text)', fontSize: '13px' }}>
+                              {new Date(log.logged_date || log.created_at).toLocaleDateString()}
+                            </p>
+                            <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                              {log.note || 'Tidak ada catatan'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-muted-2)', textAlign: 'center' }}>
+                        🏥 Belum ada catatan terapi untuk pasien ini.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {progressTab === 'vitals' && (
+                  <div className="chart-card">
+                    <h3>❤️ Vital Snapshots</h3>
+                    {snapshotData.length > 0 ? (
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {snapshotData.slice(0, 5).map((snapshot, idx) => (
+                          <div key={snapshot.snapshot_id || idx} style={{
+                            padding: '12px',
+                            background: 'var(--color-bg)',
+                            borderRadius: '8px',
+                            borderLeft: '4px solid var(--teal)'
+                          }}>
+                            <p style={{ margin: '0 0 6px 0', fontWeight: 600, color: 'var(--color-text)', fontSize: '13px' }}>
+                              {new Date(snapshot.snapshot_date || snapshot.created_at).toLocaleDateString()}
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
+                              {snapshot.notes && (
+                                <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                                  📝 {snapshot.notes}
+                                </p>
+                              )}
+                              {snapshot.blood_pressure && (
+                                <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                                  🩸 BP: {snapshot.blood_pressure}
+                                </p>
+                              )}
+                              {snapshot.mobility_score && (
+                                <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
+                                  🏃 Mobility: {snapshot.mobility_score}%
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '16px', background: 'var(--color-bg)', borderRadius: '8px', color: 'var(--color-muted-2)', textAlign: 'center' }}>
+                        ❤️ Belum ada vital snapshot. Tambahkan melalui Vital Signs Tracker.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </>
       )}

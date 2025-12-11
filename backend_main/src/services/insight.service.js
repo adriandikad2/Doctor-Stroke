@@ -63,17 +63,37 @@ Anda adalah asisten rehabilitasi stroke. Buat ringkasan singkat (≤100 kata, Ba
 Gunakan nada suportif. Jika ada data kosong, sebutkan secara singkat tanpa spekulasi.
 `;
 
-  const summaryText = await requestGeminiSummary(prompt, context);
+  try {
+    const summaryText = await requestGeminiSummary(prompt, context);
 
-  return {
-    patient_id: patientId,
-    generated_at: new Date().toISOString(),
-    summary: summaryText,
-    context_excerpt: {
-      nutritionProfile,
-      latestMeals: context.latestMeals,
-      medicationAdherence: context.medicationAdherence,
-      upcomingAppointments: context.upcomingAppointments,
-    },
-  };
+    return {
+      patient_id: patientId,
+      generated_at: new Date().toISOString(),
+      summary: summaryText,
+      context_excerpt: {
+        nutritionProfile,
+        latestMeals: context.latestMeals,
+        medicationAdherence: context.medicationAdherence,
+        upcomingAppointments: context.upcomingAppointments,
+      },
+    };
+  } catch (error) {
+    console.error('[Insight Service] Failed to generate summary:', error.message);
+    
+    // Re-throw with context for controller to handle
+    const err = new Error(error.message);
+    err.data = {
+      patient_id: patientId,
+      generated_at: new Date().toISOString(),
+      summary: null,
+      error: 'Unable to generate AI summary at this time. Using fallback insights.',
+      context_excerpt: {
+        nutritionProfile,
+        latestMeals: context.latestMeals,
+        medicationAdherence: context.medicationAdherence,
+        upcomingAppointments: context.upcomingAppointments,
+      },
+    };
+    throw err;
+  }
 };
