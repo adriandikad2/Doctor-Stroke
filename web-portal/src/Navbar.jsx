@@ -231,18 +231,29 @@ export default function Navbar({ isLoggedIn, user, onNavigate, onSignIn, onSignO
             >
               📅 Scheduler
             </button>
-            <button 
-              className="btn-ghost" 
-              onClick={() => { onNavigate('medication'); setMobileMenuOpen(false); }}
-            >
-              💊 Medications
-            </button>
-            <button 
-              className="btn-ghost" 
-              onClick={() => { onNavigate('adherence'); setMobileMenuOpen(false); }}
-            >
-              📊 Adherence
-            </button>
+            {user?.role === 'therapist' ? (
+              <button 
+                className="btn-ghost" 
+                onClick={() => { onNavigate('exercise'); setMobileMenuOpen(false); }}
+              >
+                🏃‍♂️ Exercise
+              </button>
+            ) : (
+              <>
+                <button 
+                  className="btn-ghost" 
+                  onClick={() => { onNavigate('medication'); setMobileMenuOpen(false); }}
+                >
+                  💊 Medications
+                </button>
+                <button 
+                  className="btn-ghost" 
+                  onClick={() => { onNavigate('adherence'); setMobileMenuOpen(false); }}
+                >
+                  📊 Adherence
+                </button>
+              </>
+            )}
             <button 
               className="btn-ghost" 
               onClick={() => { onNavigate('diet'); setMobileMenuOpen(false); }}

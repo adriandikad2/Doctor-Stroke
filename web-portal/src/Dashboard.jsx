@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { patientAPI, appointmentAPI, logAPI, insightAPI, nutritionAPI, medicationCatalogAPI } from './utils/api';
+import { patientAPI, appointmentAPI, logAPI, insightAPI, nutritionAPI, medicationCatalogAPI, exerciseCatalogAPI } from './utils/api';
 import PrescriptionEntry from './components/PrescriptionEntry';
 import MedicalHistoryLogger from './components/MedicalHistoryLogger';
 import AIInsightPanel from './components/AIInsightPanel';
@@ -217,10 +217,11 @@ export default function Dashboard({ user }) {
       setProgressLoading(true);
       setProgressError('');
 
-      const [adherenceResponse, progressResponse, snapshotResponse] = await Promise.all([
+      const [adherenceResponse, progressResponse, snapshotResponse, exerciseResp] = await Promise.all([
         medicationCatalogAPI.getAdherence(selectedPatient.patient_id).catch(() => ({ success: false })),
         logAPI.progress.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
         logAPI.snapshot.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+        exerciseCatalogAPI.getPatientExercises(selectedPatient.patient_id).catch(() => ({ success: false })),
       ]);
 
       if (adherenceResponse.success && adherenceResponse.data) {
@@ -237,9 +238,32 @@ export default function Dashboard({ user }) {
       }
 
       if (progressResponse.success && progressResponse.data) {
-        setProgressLogs(progressResponse.data);
+        const exerciseLogs = exerciseResp.success && Array.isArray(exerciseResp.data)
+          ? exerciseResp.data.flatMap((ex) =>
+              (ex.adherence_logs || []).map((log) => ({
+                ...log,
+                note: `Exercise ${ex.exercise?.exercise_name || ''}: ${log.status}`,
+                created_at: log.created_at,
+                progress_log_id: log.exercise_log_id || log.adherence_id || log.adherence_log_id
+              }))
+            )
+          : [];
+        setProgressLogs([
+          ...progressResponse.data,
+          ...exerciseLogs,
+        ].sort((a, b) => new Date(b.logged_date || b.created_at) - new Date(a.logged_date || a.created_at)));
       } else {
-        setProgressLogs([]);
+        const exerciseLogs = exerciseResp.success && Array.isArray(exerciseResp.data)
+          ? exerciseResp.data.flatMap((ex) =>
+              (ex.adherence_logs || []).map((log) => ({
+                ...log,
+                note: `Exercise ${ex.exercise?.exercise_name || ''}: ${log.status}`,
+                created_at: log.created_at,
+                progress_log_id: log.exercise_log_id || log.adherence_id || log.adherence_log_id
+              }))
+            )
+          : [];
+        setProgressLogs(exerciseLogs);
       }
 
       if (snapshotResponse.success && snapshotResponse.data) {
@@ -832,14 +856,6 @@ export default function Dashboard({ user }) {
             />
           )}
 
-          {/* Exercise Catalog - For Therapists */}
-          {user?.role === 'therapist' && (
-            <ExerciseCatalogEntry 
-              user={user}
-              onSuccess={() => setRefreshTrigger(prev => prev + 1)}
-            />
-          )}
-
           {/* AI Clinical Insights Panel */}
           {selectedPatient && (
             <AIInsightPanel selectedPatient={selectedPatient} />
@@ -1063,17 +1079,17 @@ export default function Dashboard({ user }) {
                     {progressLogs.length > 0 ? (
                       <div style={{ display: 'grid', gap: '10px' }}>
                         {progressLogs.map((log, idx) => (
-                          <div key={log.progress_log_id || idx} style={{
+                          <div key={log.progress_log_id || log.adherence_id || idx} style={{
                             padding: '12px',
                             background: 'var(--color-bg)',
                             borderRadius: '8px',
                             borderLeft: '4px solid var(--blue)'
                           }}>
                             <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-text)', fontSize: '13px' }}>
-                              {new Date(log.logged_date || log.created_at).toLocaleDateString()}
+                              {new Date(log.logged_date || log.actual_date || log.created_at).toLocaleDateString()}
                             </p>
                             <p style={{ margin: 0, color: 'var(--color-muted-2)', fontSize: '12px' }}>
-                              {log.note || 'Tidak ada catatan'}
+                              {log.note || log.status || 'Tidak ada catatan'}
                             </p>
                           </div>
                         ))}

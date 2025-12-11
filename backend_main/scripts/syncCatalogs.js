@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-import { strokeMedications, nutritionCatalog } from '../src/config/seedCatalogs.js';
+import { strokeMedications, strokeExercises, nutritionCatalog } from '../src/config/seedCatalogs.js';
 
 dotenv.config();
 
@@ -76,8 +76,43 @@ const syncNutrition = async () => {
   }
 };
 
+const syncExercises = async () => {
+  const names = strokeExercises.map((e) => e.exercise_name);
+
+  // Remove exercises not in seed
+  const removed = await prisma.exercise_catalogs.deleteMany({
+    where: { exercise_name: { notIn: names } },
+  });
+  if (removed.count > 0) {
+    console.log(`[sync] Removed ${removed.count} exercise_catalogs not in seed`);
+  }
+
+  for (const ex of strokeExercises) {
+    const existing = await prisma.exercise_catalogs.findFirst({
+      where: { exercise_name: ex.exercise_name },
+    });
+    if (existing) {
+      await prisma.exercise_catalogs.updateMany({
+        where: { exercise_name: ex.exercise_name },
+        data: {
+          description: ex.description,
+          specialization: ex.specialization,
+          frequency_per_day: ex.frequency_per_day,
+          duration_minutes: ex.duration_minutes,
+          image_url: ex.image_url,
+          tutorial_url: ex.tutorial_url,
+          instructions: ex.instructions,
+        },
+      });
+    } else {
+      await prisma.exercise_catalogs.create({ data: ex });
+    }
+  }
+};
+
 const main = async () => {
   await syncMedications();
+  await syncExercises();
   await syncNutrition();
   console.log('[sync] Catalogs synchronized with seed data.');
 };

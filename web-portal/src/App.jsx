@@ -3,6 +3,7 @@ import Scheduler from './Scheduler'
 import SignIn from './SignIn'
 import DietManagement from './DietManagement'
 import Medications from './Medications'
+import ExerciseCatalogEntry from './components/ExerciseCatalogEntry'
 import MedicationAdherence from './MedicationAdherence'
 import Dashboard from './Dashboard'
 import Navbar from './Navbar'
@@ -134,11 +135,18 @@ export default function App() {
           <Scheduler user={user} />
         )}
         
-        {page === 'medication' && isLoggedIn && (
+        {page === 'medication' && isLoggedIn && user?.role !== 'therapist' && (
           <Medications user={user} />
         )}
 
-        {page === 'adherence' && isLoggedIn && (
+        {page === 'exercise' && isLoggedIn && user?.role === 'therapist' && (
+          <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+            <h1 style={{ marginBottom: 16 }}>Exercise Catalog</h1>
+            <ExerciseCatalogEntry user={user} />
+          </div>
+        )}
+
+        {page === 'adherence' && isLoggedIn && user?.role !== 'therapist' && (
           <MedicationAdherence user={user} />
         )}
         

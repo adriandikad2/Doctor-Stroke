@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { exerciseCatalogAPI } from '../utils/api';
+import { exerciseCatalogAPI, patientAPI } from '../utils/api';
+
+const EXERCISE_IMAGE_FALLBACKS = {
+  'seated marching': 'https://content.healthwise.net/resources/14.7/en-us/media/medical/hw/h9991900_001.jpg',
+  'ankle pumps': 'https://i.ytimg.com/vi/-twMbBmHwso/maxresdefault.jpg',
+  'shoulder flex slide': 'https://i.ytimg.com/vi/pgsPQ1_5e0w/sddefault.jpg',
+  'grip and release': 'https://cdn.shopifycdn.net/s/files/1/2350/9323/files/description_image_02.jpg?v=1637810820',
+  'balloon toss': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgLuzTixGF7CGYuhsUIlc4FUBna7lQznXZ8FyPMrtw-w&s',
+  'music-assisted arm reach': 'https://theayurveda.files.wordpress.com/2014/05/hand-exercise.jpg',
+  'tongue strengthening': 'https://www.verywellhealth.com/thmb/q6lBlK32y-SASqvUuPysCzjrPtY=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/what-is-speech-therapy-906825-30d22d2de55146f5a991f0e2f1a0b826.jpg',
+  'facial cue practice': 'https://www.childreachcenter.com/wp-content/uploads/2017/09/Articulation-Practice-Long-EE-1024x683.jpg',
+  'mindfulness breathing': 'https://i0.wp.com/post.healthline.com/wp-content/uploads/2020/09/Meditation_Meditating_Woman_Tree_Nature-1296x728-Header.jpg?w=1155&h=1528',
+  'memory card sorting': 'https://images.squarespace-cdn.com/content/v1/5c1a6b09e17ba375c4f9d4d7/1571341168511-EF2A9BG4UANYS749R0MC/Memory+cards.jpg'
+};
+
+const getExerciseImage = (exercise) => {
+  const key = (exercise?.exercise_name || '').toLowerCase();
+  if (EXERCISE_IMAGE_FALLBACKS[key]) return EXERCISE_IMAGE_FALLBACKS[key];
+  if (exercise?.image_url && exercise.image_url.trim()) return exercise.image_url;
+  return 'https://via.placeholder.com/300x200?text=Exercise';
+};
 
 export default function ExerciseCatalogEntry({ user, onSuccess }) {
   const [exercises, setExercises] = useState([]);
@@ -12,11 +32,15 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
   const [expandedExId, setExpandedExId] = useState(null);
   const [patientExercises, setPatientExercises] = useState([]);
 
-  const specializations = ['PHYSICAL', 'OCCUPATIONAL', 'RECREATIONAL', 'SPEECH', 'PSYCHOLOGIST', 'DIETITIAN'];
+  const specializations = user?.specialization
+    ? [user.specialization.toUpperCase()]
+    : ['PHYSICAL', 'OCCUPATIONAL', 'RECREATIONAL', 'SPEECH', 'PSYCHOLOGIST', 'DIETITIAN'];
 
   useEffect(() => {
     if (user?.role === 'therapist') {
-      fetchExercises(selectedSpecialization);
+      const spec = user?.specialization ? user.specialization.toUpperCase() : selectedSpecialization;
+      setSelectedSpecialization(spec);
+      fetchExercises(spec);
       fetchPatients();
     }
   }, [user]);
@@ -41,15 +65,15 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch('/api/patients', {
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setPatients(Array.isArray(data.data) ? data.data : []);
+      const response = await patientAPI.getMyPatients();
+      if (response.success) {
+        setPatients(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setPatients([]);
       }
     } catch (err) {
       console.error('Error fetching patients:', err);
+      setPatients([]);
     }
   };
 
@@ -140,7 +164,7 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
           <option value="">-- Choose Patient --</option>
           {patients.map((p) => (
             <option key={p.patient_id} value={p.patient_id}>
-              {p.patient_name || 'Unknown'}
+              {p.name || p.patient_name || 'Unknown'}
             </option>
           ))}
         </select>
@@ -167,7 +191,9 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
                 color: selectedSpecialization === spec ? 'var(--blue)' : 'var(--color-text)',
                 cursor: 'pointer',
                 fontWeight: '500',
-                fontSize: '12px'
+                fontSize: '12px',
+                pointerEvents: specializations.length === 1 ? 'none' : 'auto',
+                opacity: specializations.length === 1 ? 0.6 : 1
               }}
             >
               {spec}
@@ -181,8 +207,9 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
         <h4>Available Exercises ({exercises.length}) - {selectedSpecialization}</h4>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '16px'
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          gap: '14px',
+          overflowX: 'auto'
         }}>
           {exercises.map((ex) => (
             <div
@@ -207,8 +234,9 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
             >
               {/* Exercise Image */}
               <img
-                src={ex.image_url}
+                src={getExerciseImage(ex)}
                 alt={ex.exercise_name}
+                referrerPolicy="no-referrer"
                 style={{
                   width: '100%',
                   height: '180px',
@@ -216,6 +244,7 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
                   backgroundColor: '#f5f5f5'
                 }}
                 onError={(e) => {
+                  e.target.src = getExerciseImage(ex);
                   e.target.style.objectFit = 'contain';
                   e.target.style.backgroundColor = '#fafafa';
                 }}
@@ -240,7 +269,7 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
 
                 {/* Quick Info Button */}
                 <button
-                  onClick={() => setExpandedExId(expandedExId === ex.exercise_id ? null : ex.exercise_id)}
+                  onClick={() => setExpandedExId(expandedExId === (ex.catalog_id || ex.exercise_id) ? null : (ex.catalog_id || ex.exercise_id))}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -254,11 +283,11 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
                     marginBottom: '8px'
                   }}
                 >
-                  {expandedExId === ex.exercise_id ? 'Hide Instructions' : 'View Instructions'}
+                  {expandedExId === (ex.catalog_id || ex.exercise_id) ? 'Hide Instructions' : 'View Instructions'}
                 </button>
 
                 {/* Expanded Details */}
-                {expandedExId === ex.exercise_id && (
+                {expandedExId === (ex.catalog_id || ex.exercise_id) && (
                   <div style={{
                     backgroundColor: 'rgba(104, 161, 209, 0.05)',
                     padding: '10px',
@@ -288,7 +317,7 @@ export default function ExerciseCatalogEntry({ user, onSuccess }) {
 
                 {/* Add Button */}
                 <button
-                  onClick={() => handleAssignExercise(ex.exercise_id)}
+                  onClick={() => handleAssignExercise(ex.catalog_id || ex.exercise_id)}
                   disabled={loading || !selectedPatient}
                   style={{
                     width: '100%',

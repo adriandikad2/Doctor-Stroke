@@ -208,7 +208,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 2,
     duration_minutes: 10,
-    image_url: 'https://img.youtube.com/vi/1m72e65YZtM/0.jpg',
+    image_url: 'https://content.healthwise.net/resources/14.7/en-us/media/medical/hw/h9991900_001.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=1m72e65YZtM',
     instructions: 'Duduk tegak, angkat lutut bergantian 10-15 repetisi per sisi.'
   },
@@ -218,7 +218,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 3,
     duration_minutes: 5,
-    image_url: 'https://img.youtube.com/vi/KxfFzSOAT7g/0.jpg',
+    image_url: 'https://i.ytimg.com/vi/-twMbBmHwso/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=KxfFzSOAT7g',
     instructions: 'Gerakkan pergelangan kaki ke atas-bawah 15-20 repetisi per sisi.'
   },
@@ -228,7 +228,7 @@ const strokeExercises = [
     specialization: 'OCCUPATIONAL',
     frequency_per_day: 2,
     duration_minutes: 8,
-    image_url: 'https://img.youtube.com/vi/AlMflkn7sM4/0.jpg',
+    image_url: 'https://i.ytimg.com/vi/pgsPQ1_5e0w/sddefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=AlMflkn7sM4',
     instructions: 'Gunakan handuk di meja, geser tangan ke depan perlahan, tahan 5 detik.'
   },
@@ -238,7 +238,7 @@ const strokeExercises = [
     specialization: 'OCCUPATIONAL',
     frequency_per_day: 3,
     duration_minutes: 6,
-    image_url: 'https://img.youtube.com/vi/UodVZEfubhk/0.jpg',
+    image_url: 'https://cdn.shopifycdn.net/s/files/1/2350/9323/files/description_image_02.jpg?v=1637810820',
     tutorial_url: 'https://www.youtube.com/watch?v=UodVZEfubhk',
     instructions: 'Genggam bola spons 10-15 kali, istirahat, ulangi 3 set.'
   },
@@ -248,7 +248,7 @@ const strokeExercises = [
     specialization: 'RECREATIONAL',
     frequency_per_day: 1,
     duration_minutes: 10,
-    image_url: 'https://img.youtube.com/vi/auqZJnGxNuA/0.jpg',
+    image_url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgLuzTixGF7CGYuhsUIlc4FUBna7lQznXZ8FyPMrtw-w&s',
     tutorial_url: 'https://www.youtube.com/watch?v=auqZJnGxNuA',
     instructions: 'Lempar-tangkap balon perlahan, fokus kontrol bahu dan siku.'
   },
@@ -258,7 +258,7 @@ const strokeExercises = [
     specialization: 'RECREATIONAL',
     frequency_per_day: 1,
     duration_minutes: 12,
-    image_url: 'https://img.youtube.com/vi/a3lZHllLYto/0.jpg',
+    image_url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4JMa48HzsgkQfI13a-r0SLYWGRMqdFcz16A&s',
     tutorial_url: 'https://www.youtube.com/watch?v=a3lZHllLYto',
     instructions: 'Ikuti irama musik, raih benda ringan ke arah berbeda 10 repetisi.'
   },
@@ -268,7 +268,7 @@ const strokeExercises = [
     specialization: 'SPEECH',
     frequency_per_day: 3,
     duration_minutes: 5,
-    image_url: 'https://img.youtube.com/vi/Y0KgBbT11Ew/0.jpg',
+    image_url: 'https://i.pinimg.com/736x/30/24/e0/3024e05128505a4a3c75d4ee173f61f2.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=Y0KgBbT11Ew',
     instructions: 'Tekan lidah ke langit-langit 5 detik, ulang 10 kali.'
   },
@@ -278,7 +278,7 @@ const strokeExercises = [
     specialization: 'SPEECH',
     frequency_per_day: 2,
     duration_minutes: 6,
-    image_url: 'https://img.youtube.com/vi/wlqWzHAfSmc/0.jpg',
+    image_url: 'https://lessonpix.com/actionshots/cover/10035129/335/Vowel%2BProlongation%2B_i_.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=wlqWzHAfSmc',
     instructions: 'Ucapkan vokal “aaa-iii-uuu” 5-7 detik tiap vokal, 5 kali.'
   },
@@ -288,7 +288,7 @@ const strokeExercises = [
     specialization: 'PSYCHOLOGIST',
     frequency_per_day: 1,
     duration_minutes: 15,
-    image_url: 'https://img.youtube.com/vi/Ls3G_FduOIw/0.jpg',
+    image_url: 'https://img.youtube.com/vi/Ls3G_FduOIw/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=Ls3G_FduOIw',
     instructions: 'Jalan santai 10-15 menit sambil mencatat perasaan sebelum-sesudah.'
   },
@@ -298,8 +298,8 @@ const strokeExercises = [
     specialization: 'PSYCHOLOGIST',
     frequency_per_day: 2,
     duration_minutes: 5,
-    image_url: 'https://img.youtube.com/vi/ruElUiVoQPQ/0.jpg',
-    tutorial_url: 'https://www.youtube.com/watch?v=ruElUiVoQPQ',
+    image_url: 'https://img.youtube.com/vi/tEmt1Znux58/maxresdefault.jpg',
+    tutorial_url: 'https://www.youtube.com/watch?v=tEmt1Znux58',
     instructions: 'Tarik napas 4 detik, tahan 4, buang 4, tahan 4; ulang 6-8 siklus.'
   },
   {
@@ -308,7 +308,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 2,
     duration_minutes: 8,
-    image_url: 'https://img.youtube.com/vi/FgzjxOnWYvA/0.jpg',
+    image_url: 'https://img.youtube.com/vi/FgzjxOnWYvA/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=FgzjxOnWYvA',
     instructions: 'Bangun-duduk kursi 10-12 repetisi, gunakan tangan bila perlu.'
   },
@@ -318,7 +318,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 2,
     duration_minutes: 6,
-    image_url: 'https://img.youtube.com/vi/4_ssBADWinU/0.jpg',
+    image_url: 'https://img.youtube.com/vi/4_ssBADWinU/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=4_ssBADWinU',
     instructions: 'Dalam posisi terlentang, geser tumit ke arah bokong 10-15 repetisi.'
   },
@@ -328,7 +328,7 @@ const strokeExercises = [
     specialization: 'OCCUPATIONAL',
     frequency_per_day: 3,
     duration_minutes: 5,
-    image_url: 'https://img.youtube.com/vi/fU189t67VlM/0.jpg',
+    image_url: 'https://img.youtube.com/vi/fU189t67VlM/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=fU189t67VlM',
     instructions: 'Sentuhkan ibu jari ke tiap ujung jari 10 kali, lalu ganti tangan.'
   },
@@ -338,7 +338,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 2,
     duration_minutes: 6,
-    image_url: 'https://img.youtube.com/vi/IgIz4D4ecv0/0.jpg',
+    image_url: 'https://img.youtube.com/vi/IgIz4D4ecv0/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=IgIz4D4ecv0',
     instructions: 'Guling kanan-kiri dengan bantuan tangan, 6-8 repetisi.'
   },
@@ -348,7 +348,7 @@ const strokeExercises = [
     specialization: 'PHYSICAL',
     frequency_per_day: 2,
     duration_minutes: 5,
-    image_url: 'https://img.youtube.com/vi/WklUZWulQao/0.jpg',
+    image_url: 'https://img.youtube.com/vi/WklUZWulQao/maxresdefault.jpg',
     tutorial_url: 'https://www.youtube.com/watch?v=WklUZWulQao',
     instructions: 'Tarik tulang belikat ke belakang, tahan 5 detik, ulang 10-12 kali.'
   }
@@ -477,7 +477,7 @@ const nutritionCatalog = [
   }
 ];
 
-export { strokeMedications, nutritionCatalog };
+export { strokeMedications, strokeExercises, nutritionCatalog };
 
 export const seedCatalogs = async () => {
   try {
