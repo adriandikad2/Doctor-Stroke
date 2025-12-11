@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { patientAPI, appointmentAPI, logAPI, insightAPI, nutritionAPI } from './utils/api';
+import { patientAPI, appointmentAPI, logAPI, insightAPI, nutritionAPI, medicationCatalogAPI } from './utils/api';
 import PrescriptionEntry from './components/PrescriptionEntry';
 import MedicalHistoryLogger from './components/MedicalHistoryLogger';
 import AIInsightPanel from './components/AIInsightPanel';
@@ -53,26 +53,24 @@ export default function Dashboard({ user }) {
           setPatients([]);
         }
 
-        // Fetch appointments (non-blocking)
-        try {
-          const appointmentsResponse = await appointmentAPI.getMyAppointments();
-          console.log('Appointments response:', appointmentsResponse);
-          
-          if (appointmentsResponse.success) {
-            const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
-            // Filter upcoming appointments only
-            const upcomingAppointments = appointmentsList.filter(apt => {
-              const aptDate = new Date(apt.slot?.start_time || apt.created_at);
-              return aptDate >= new Date();
-            });
-            setAppointments(upcomingAppointments);
-          } else {
+        // Fetch appointments for selected patient (non-blocking)
+        if (selectedPatient?.patient_id) {
+          try {
+            const appointmentsResponse = await appointmentAPI.getAppointmentsByPatient(selectedPatient.patient_id);
+            if (appointmentsResponse.success) {
+              const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+              const upcomingAppointments = appointmentsList.filter(apt => {
+                const aptDate = new Date(apt.slot?.start_time || apt.start_time || apt.created_at);
+                return aptDate >= new Date();
+              });
+              setAppointments(upcomingAppointments);
+            } else {
+              setAppointments([]);
+            }
+          } catch (err) {
+            console.error('Error fetching appointments:', err);
             setAppointments([]);
           }
-        } catch (err) {
-          console.error('Error fetching appointments:', err);
-          // Don't set error for appointments - it's non-critical
-          setAppointments([]);
         }
       } catch (err) {
         console.error('Dashboard error:', err);
@@ -88,12 +86,35 @@ export default function Dashboard({ user }) {
   const fetchMedicalHistory = async () => {
     if (!selectedPatient?.patient_id) return;
     try {
-      const response = await logAPI.snapshot.getByPatientId(selectedPatient.patient_id);
-      if (response.success && response.data) {
-        setMedicalHistory(response.data);
-      } else {
-        setMedicalHistory([]);
-      }
+      // Pull both progress snapshots and progress logs from backend
+      const [snapResp, logResp] = await Promise.all([
+        logAPI.snapshot.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+        logAPI.progress.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+      ]);
+
+      const snaps = snapResp.success && Array.isArray(snapResp.data) ? snapResp.data : [];
+      const logs = logResp.success && Array.isArray(logResp.data) ? logResp.data : [];
+
+      const combined = [
+        ...snaps.map((s) => ({
+          type: 'snapshot',
+          recorded_at: s.recorded_at || s.created_at || s.snapshot_date,
+          blood_pressure_systolic: s.blood_pressure_systolic,
+          blood_pressure_diastolic: s.blood_pressure_diastolic,
+          exercise_completed: s.exercise_completed,
+          notes: s.notes,
+          snapshot_id: s.snapshot_id,
+        })),
+        ...logs.map((l) => ({
+          type: 'log',
+          recorded_at: l.logged_date || l.created_at,
+          notes: l.note,
+          log_id: l.progress_log_id,
+        })),
+      ];
+
+      combined.sort((a, b) => new Date(b.recorded_at) - new Date(a.recorded_at));
+      setMedicalHistory(combined);
     } catch (err) {
       console.error('Error fetching medical history:', err);
       setMedicalHistory([]);
@@ -148,7 +169,7 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const appointmentsResponse = await appointmentAPI.getMyAppointments();
+          const appointmentsResponse = await appointmentAPI.getAppointmentsByPatient(selectedPatient.patient_id);
         if (appointmentsResponse.success) {
           const appointmentsList = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
           const upcomingAppointments = appointmentsList.filter(apt => {
@@ -197,13 +218,20 @@ export default function Dashboard({ user }) {
       setProgressError('');
 
       const [adherenceResponse, progressResponse, snapshotResponse] = await Promise.all([
-        logAPI.adherence.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
+        medicationCatalogAPI.getAdherence(selectedPatient.patient_id).catch(() => ({ success: false })),
         logAPI.progress.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
         logAPI.snapshot.getByPatientId(selectedPatient.patient_id).catch(() => ({ success: false })),
       ]);
 
       if (adherenceResponse.success && adherenceResponse.data) {
-        setAdherenceData(groupAdherenceByMonth(adherenceResponse.data));
+        // medication catalog adherence stats come as object per med
+        const logs = Object.entries(adherenceResponse.data || {}).flatMap(([med, stats]) => {
+          const total = stats.total || 0;
+          const taken = stats.taken || 0;
+          const rate = total ? Math.round((taken / total) * 100) : 0;
+          return [{ month: med, rate, total, taken }];
+        });
+        setAdherenceData(logs.length ? logs : []);
       } else {
         setAdherenceData([]);
       }
@@ -860,10 +888,14 @@ export default function Dashboard({ user }) {
             {/* Medical History Card */}
             <div className="card">
               <h3><span className="card-icon">📋</span>Medical History</h3>
-              {medicalHistory && medicalHistory.length > 0 ? (
+              {selectedPatient?.medical_history ? (
+                <p style={{ color: 'var(--color-text)', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  {selectedPatient.medical_history}
+                </p>
+              ) : medicalHistory && medicalHistory.length > 0 ? (
                 <div style={{ display: 'grid', gap: '8px' }}>
                   {medicalHistory.slice(0, 3).map((record, idx) => (
-                    <div key={record.snapshot_id || idx} style={{
+                    <div key={record.snapshot_id || record.log_id || idx} style={{
                       padding: '8px',
                       background: 'var(--color-bg)',
                       borderRadius: '6px',
@@ -871,7 +903,7 @@ export default function Dashboard({ user }) {
                       fontSize: '12px'
                     }}>
                       <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: 'var(--color-text)' }}>
-                        {new Date(record.recorded_at || record.created_at).toLocaleDateString()}
+                        {new Date(record.recorded_at || record.created_at || record.snapshot_date).toLocaleDateString()}
                       </p>
                       {record.blood_pressure_systolic && (
                         <p style={{ margin: '0 0 2px 0', color: 'var(--color-muted-2)' }}>

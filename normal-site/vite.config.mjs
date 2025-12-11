@@ -1,21 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 8082,
-    host: true,
+    host: true, // Izinkan akses network
     proxy: {
       '/api': {
-        target: process.env.BACKEND_URL || 'http://localhost:3001',
+        target: 'http://127.0.0.1:3001', // Pastikan ke Backend port 3001
         changeOrigin: true,
-        rewrite: (path) => path,
-      }
-    }
+        secure: false,
+      },
+    },
+    // INI YANG MEMPERBAIKI BLANK PAGE SAAT REFRESH:
+    historyApiFallback: true, 
   },
   build: {
     outDir: 'dist',
-  }
+  },
 });

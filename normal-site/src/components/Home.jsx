@@ -168,8 +168,17 @@ function InsightPanel({ authToken, insight, setInsight, patients, setPatients, s
         headers: { Authorization: `Bearer ${authToken}` },
       });
       const data = await res.json();
-      if (res.ok) setInsight(data.data || '');
-      else setInsight('');
+      if (res.ok) {
+        const payload = data.data || '';
+        // data may be string or object { summary: string }
+        const text =
+          typeof payload === 'string'
+            ? payload
+            : payload?.summary || payload?.error || '';
+        setInsight(text);
+      } else {
+        setInsight('');
+      }
     } catch {
       setInsight('');
     }
